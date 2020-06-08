@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>items</key>
+    <array>
+        <dict>
+            <key>cellClass</key>
+            <string>JCXGradientHeaderCell</string>
+            <key>subtitle</key>
+            <string>By {Author} — v{Version}</string>
+            <key>prefsBundle</key>
+            <string>com.jacobcxdev.iris.preferences</string>
+            <key>tweakBundle</key>
+            <string>com.jacobcxdev.iris</string>
+            <key>icon</key>
+            <string>icon-large.png</string>
+            <key>colours</key>
+            <string>#BBFFFF,#BBBBFF,#FFBBFF</string>
+            <key>darkColours</key>
+            <string>#99DDDD,#9999DD,#DD99DD</string>
+            <key>animated</key>
+            <true/>
+        </dict>
+        <dict>
+            <key>cellClass</key>
+            <string>JCXEtymologyCell</string>
+            <key>word</key>
+            <string>Iris (mythology)</string>
+            <key>information</key>
+            <string>(/ˈaɪrɪs/; Greek: Ίρις Ancient Greek: [îːris])</string>
+            <key>definition</key>
+            <string>The personification and goddess of the rainbow and messenger of the gods.</string>
+            <key>linkURL</key>
+            <string>https://en.wikipedia.org/wiki/Iris_(mythology)</string>
+            <key>tweakBundle</key>
+            <string>com.jacobcxdev.iris</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Main Preferences</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <true/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.iris</string>
+            <key>key</key>
+            <string>enabled</string>
+            <key>label</key>
+            <string>Enabled</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Activation Preferences</string>
+            <key>footerText</key>
+            <string>Show the Iris button in the navigation bar inside Messages.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <true/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.iris</string>
+            <key>key</key>
+            <string>shouldShowButton</string>
+            <key>label</key>
+            <string>Show Iris Button</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>footerText</key>
+            <string>Toggle between the shown and hidden conversation lists by shaking your device.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.iris</string>
+            <key>key</key>
+            <string>shouldToggleWhenShaken</string>
+            <key>label</key>
+            <string>Toggle with Shake</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>footerText</key>
+            <string>Toggle between the shown and hidden conversation lists by pressing both volume buttons simultaneously.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.iris</string>
+            <key>key</key>
+            <string>shouldToggleWhenVolumePressedSimultaneously</string>
+            <key>label</key>
+            <string>Toggle with Volume Buttons</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>footerText</key>
+            <string>Toggle between the shown and hidden conversation lists by toggling your device's ringer switch 3 times.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.iris</string>
+            <key>key</key>
+            <string>shouldToggleWhenRingerSwitched</string>
+            <key>label</key>
+            <string>Toggle with Ringer Switch</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Filtering Preferences</string>
+            <key>footerText</key>
+            <string>Automatically hide conversations from unknown senders.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.iris</string>
+            <key>key</key>
+            <string>shouldHideUnknownSenders</string>
+            <key>label</key>
+            <string>Hide Unknown Senders</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Badge Preferences</string>
+            <key>footerText</key>
+            <string>Prevent unread messages from the hidden conversation list from contributing to the Messages app badge count.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.iris</string>
+            <key>key</key>
+            <string>shouldHideHiddenUnreadCountFromSBBadge</string>
+            <key>label</key>
+            <string>Hide Badges from Hidden Conversations</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>footerText</key>
+            <string>Hide the badge from the Iris button inside Messages.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.iris</string>
+            <key>key</key>
+            <string>shouldHideButtonBadge</string>
+            <key>label</key>
+            <string>Hide Iris Button Badge</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Security Preferences</string>
+            <key>footerText</key>
+            <string>Require Face ID, Touch ID, or passcode to view the hidden conversation list.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.iris</string>
+            <key>key</key>
+            <string>shouldSecureHiddenList</string>
+            <key>label</key>
+            <string>Secure Hidden Conversation List</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>footerText</key>
+            <string>Temporarily show the Iris button after having authenticated successfully. The Iris button will hide again when messages enters the background.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.iris</string>
+            <key>key</key>
+            <string>shouldShowButtonAfterAuthentication</string>
+            <key>label</key>
+            <string>Show Iris Button after Authentication</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>footerText</key>
+            <string>Automatically hide the hidden conversation list when Messages enters the background.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.iris</string>
+            <key>key</key>
+            <string>shouldAutoHideHiddenList</string>
+            <key>label</key>
+            <string>Auto-Hide Hidden Conversation List</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>footerText</key>
+            <string>Hide the leading swipe actions which are added by Iris.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.iris</string>
+            <key>key</key>
+            <string>shouldHideSwipeActions</string>
+            <key>label</key>
+            <string>Hide Swipe Actions</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Developer</string>
+            <key>footerText</key>
+            <string>Copyright © 2020 JacobCXDev. All rights reserved.</string>
+            <key>footerAlignment</key>
+            <integer>1</integer>
+        </dict>
+        <dict>
+            <key>cellClass</key>
+            <string>JCXTwitterCell</string>
+            <key>label</key>
+            <string>Follow me on Twitter</string>
+            <key>username</key>
+            <string>jcxdev</string>
+            <key>shouldDisplayAvatar</key>
+            <true/>
+        </dict>
+        <dict>
+            <key>cellClass</key>
+            <string>JCXPayPalCell</string>
+            <key>label</key>
+            <string>Donate to me via PayPal</string>
+            <key>username</key>
+            <string>jacobcxdev</string>
+            <key>shouldDisplayAvatar</key>
+            <true/>
+        </dict>
+        <dict>
+            <key>cellClass</key>
+            <string>JCXCashAppCell</string>
+            <key>label</key>
+            <string>Donate to me via CashApp</string>
+            <key>cashTag</key>
+            <string>£JacobCXDev</string>
+            <key>shouldDisplayAvatar</key>
+            <true/>
+        </dict>
+        <dict>
+            <key>cellClass</key>
+            <string>JCXMailCell</string>
+            <key>label</key>
+            <string>Email me for support</string>
+            <key>emailAddress</key>
+            <string>jacobcxdev@gmail.com</string>
+            <key>shouldDisplayAvatar</key>
+            <true/>
+        </dict>
+        <dict>
+            <key>cellClass</key>
+            <string>JCXGitHubCell</string>
+            <key>label</key>
+            <string>View the source code on GitHub</string>
+            <key>remote</key>
+            <string>jacobcxdev/Iris</string>
+            <key>shouldDisplayAvatar</key>
+            <true/>
+        </dict>
+    </array>
+    <key>title</key>
+    <string>Iris</string>
+</dict>
+</plist>
