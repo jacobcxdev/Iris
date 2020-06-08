@@ -1,0 +1,9 @@
+#!/bin/sh
+
+echo "Killing imagent"
+killall -9 imagent
+
+echo "Killing tccd"
+killall -9 tccd
+
+exit 0
