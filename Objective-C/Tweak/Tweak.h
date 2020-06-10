@@ -107,6 +107,8 @@
 - (void)_chatUnreadCountDidChange:(NSNotification *)notification;
 - (void)_conversationListDidChange:(NSNotification *)notification;
 - (void)_updateConversationListsAndSortIfEnabled;
+- (void)_updateFilteredConversationLists;
+- (void)_updateNonPlaceholderConverationLists;
 - (void)_switchFlag:(IrisConversationFlag)flag tag:(IrisConversationTag *)tag;
 - (NSArray *)activeConversations;
 - (CKConversationList *)conversationList;

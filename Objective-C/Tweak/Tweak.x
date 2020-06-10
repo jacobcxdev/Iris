@@ -736,7 +736,16 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     self.navigationItem.title = tag && tag.name ? tag.name : defaultNavigationBarTitle;
 
     [self.tableView beginUpdates];
-    [self _updateConversationListsAndSortIfEnabled];
+    if ([self respondsToSelector:@selector(_updateConversationListsAndSortIfEnabled)]) {
+        [self _updateConversationListsAndSortIfEnabled];
+    } else {
+        if ([self respondsToSelector:@selector(_updateFilteredConversationLists)]) {
+            [self _updateFilteredConversationLists];
+        }
+        if ([self respondsToSelector:@selector(_updateNonPlaceholderConverationLists)]) {
+            [self _updateNonPlaceholderConverationLists];
+        }
+    }
     NSIndexSet *indexSet = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, self.tableView.numberOfSections)];
     [self.tableView reloadSections:indexSet withRowAnimation:UITableViewRowAnimationAutomatic];
     [self.tableView endUpdates];
