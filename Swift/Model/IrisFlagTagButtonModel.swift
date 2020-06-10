@@ -17,6 +17,8 @@ import UIKit
     static let hiddenTintColour: UIColor = .systemBlue
     static let unreadImage = UIImage(systemName: "message.circle")
     static let unreadTintColour: UIColor = .systemBlue
+    static let untaggedImage = UIImage(systemName: "minus.circle")
+    static let untaggedTintColour: UIColor = .systemBlue
     static let defaultImage = UIImage(systemName: "circle.fill")
     static let defaultTintColour: UIColor = .systemBlue
 
@@ -67,6 +69,9 @@ import UIKit
         case .Unread:
             image = IrisFlagTagButtonModel.unreadImage
             tintColour = conversationTag?.colour ?? IrisFlagTagButtonModel.unreadTintColour
+        case .Tagged:
+            image = conversationTag == nil ? IrisFlagTagButtonModel.untaggedImage : IrisFlagTagButtonModel.defaultImage
+            tintColour = conversationTag?.colour ?? IrisFlagTagButtonModel.untaggedTintColour
         default:
             image = IrisFlagTagButtonModel.defaultImage
             tintColour = conversationTag?.colour ?? IrisFlagTagButtonModel.defaultTintColour

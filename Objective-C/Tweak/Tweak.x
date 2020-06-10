@@ -109,6 +109,8 @@ static void updateMenuButtons() {
         IrisFlagTagButtonModel *buttonModel = [[IrisFlagTagButtonModel alloc] initWithConversationFlag:Tagged conversationTag:tag];
         [buttonModels addObject:buttonModel];
     }
+    IrisFlagTagButtonModel *untaggedButtonModel = [[IrisFlagTagButtonModel alloc] initWithConversationFlag:Tagged conversationTag:nil];
+    [buttonModels addObject:untaggedButtonModel];
     IrisButtonModel *editButtonModel = [[IrisButtonModel alloc] initWithImage:[UIImage systemImageNamed:@"ellipsis.circle"] tintColour:[UIColor systemBlueColor] isHighlighted:false isSelected:false selectable:false badgeCount:0 badgeHidden:true alpha:1 tag:1 target:nil action:nil];
     [buttonModels addObject:editButtonModel];
     for (IrisButtonModel *buttonModel in buttonModels) {
@@ -434,7 +436,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
 }
 %new
 - (BOOL)tagMatchesTag:(IrisConversationTag *)tag {
-    return self.tagged && self.tag && tag && [self.tag.uuid isEqual:tag.uuid];
+    return (self.tagged && self.tag && tag && [self.tag.uuid isEqual:tag.uuid]) || (!self.tagged && !tag);
 }
 %new
 - (IrisConversationTag *)tag {
@@ -521,7 +523,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     if (!defaultNavigationBarTitle) {
         defaultNavigationBarTitle = self.navigationItem.title;
     }
-    self.navigationItem.title = currentTag && currentTag.name ? currentTag.name : defaultNavigationBarTitle;
+    self.navigationItem.title = currentFlag == Tagged ? currentTag.name ? currentTag.name : @"Untagged" : currentFlag == Unread ? @"Unread" : defaultNavigationBarTitle;
     return %orig;
 }
 - (NSMutableArray *)actionsForTranscriptPreviewController:(CKTranscriptPreviewController *)previewController {
