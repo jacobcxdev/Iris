@@ -43,6 +43,8 @@ static bool shouldAutoHideHiddenList = false;
 static NSString *shouldAutoHideHiddenListKey = @"shouldAutoHideHiddenList";
 static bool shouldHideSwipeActions = false;
 static NSString *shouldHideSwipeActionsKey = @"shouldHideSwipeActions";
+static bool isQuickSwitchEnabled = true;
+static NSString *isQuickSwitchEnabledKey = @"isQuickSwitchEnabled";
 
 static IrisConversationFlag currentFlag = Shown;
 static NSString *currentFlagKey = @"com.jacobcxdev.iris.currentFlag";
@@ -791,6 +793,15 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
 }
 %end
 
+%hook SMSApplication
+- (void)applicationWillTerminate {
+    persistDefaultsState(true);
+    return %orig;
+}
+%end
+%end
+
+%group Messages_QuickSwitch
 %hook CKBrowserSwitcherFooterView
 - (instancetype)initWithFrame:(CGRect)frame toggleBordersOnInterfaceStyle:(BOOL)toggleBordersOnInterfaceStyle {
     id orig = %orig;
@@ -981,13 +992,6 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     return migratedDictionary;
 }
 %end
-
-%hook SMSApplication
-- (void)applicationWillTerminate {
-    persistDefaultsState(true);
-    return %orig;
-}
-%end
 %end
 
 // IMAgent Hooks
@@ -1060,9 +1064,9 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
 %ctor {
     NSDictionary *settings = [NSDictionary dictionaryWithContentsOfFile:@"/User/Library/Preferences/com.jacobcxdev.iris.plist"];
     if (settings) {
-        bool enabled = [settings objectForKey:@"enabled"] ? [[settings objectForKey:@"enabled"] boolValue] : true;
+        bool enabled = ![settings objectForKey:@"enabled"] || [[settings objectForKey:@"enabled"] boolValue];
         if (!enabled) return;
-        shouldShowButton = [settings objectForKey:shouldShowButtonKey] ? [[settings objectForKey:shouldShowButtonKey] boolValue] : true;
+        shouldShowButton = ![settings objectForKey:shouldShowButtonKey] || [[settings objectForKey:shouldShowButtonKey] boolValue];
         shouldToggleWhenShaken = [settings objectForKey:shouldToggleWhenShakenKey] && [[settings objectForKey:shouldToggleWhenShakenKey] boolValue];
         shouldToggleWhenVolumePressedSimultaneously = [settings objectForKey:shouldToggleWhenVolumePressedSimultaneouslyKey] && [[settings objectForKey:shouldToggleWhenVolumePressedSimultaneouslyKey] boolValue];
         shouldToggleWhenRingerSwitched = [settings objectForKey:shouldToggleWhenRingerSwitchedKey] && [[settings objectForKey:shouldToggleWhenRingerSwitchedKey] boolValue];
@@ -1073,6 +1077,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
         shouldShowButtonAfterAuthentication = [settings objectForKey:shouldShowButtonAfterAuthenticationKey] && [[settings objectForKey:shouldShowButtonAfterAuthenticationKey] boolValue];
         shouldAutoHideHiddenList = [settings objectForKey:shouldAutoHideHiddenListKey] && [[settings objectForKey:shouldAutoHideHiddenListKey] boolValue];
         shouldHideSwipeActions = [settings objectForKey:shouldHideSwipeActionsKey] && [[settings objectForKey:shouldHideSwipeActionsKey] boolValue];
+        isQuickSwitchEnabled = ![settings objectForKey:isQuickSwitchEnabledKey] || [[settings objectForKey:isQuickSwitchEnabledKey] boolValue];
     }
 
     if ([[NSBundle mainBundle].bundleIdentifier isEqualToString:@"com.apple.tccd"]) {
@@ -1081,17 +1086,6 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
         notificationCentre = [JCXNotificationCentre centre];
         NSString *mainBundleID = [NSBundle mainBundle].bundleIdentifier;
         if ([mainBundleID isEqualToString:@"com.apple.MobileSMS"]) {
-            void *handle = dlopen("/Library/Frameworks/CydiaSubstrate.framework/CydiaSubstrate", RTLD_NOW);
-            if (handle) {
-                MSHookMemory = (MSHookMemory_t)(dlsym(handle, "MSHookMemory"));
-                favouritesSectionSym = MSFindSymbol(MSGetImageByName("/System/Library/PrivateFrameworks/ChatKit.framework/ChatKit"), "_CKAppStripFavoritesSection");
-                recentsSectionSym = MSFindSymbol(MSGetImageByName("/System/Library/PrivateFrameworks/ChatKit.framework/ChatKit"), "_CKAppStripRecentsSection");
-                const NSInteger favouritesSection = 1;
-                const NSInteger recentsSection = 2;
-                MSHookMemory(favouritesSectionSym, &favouritesSection, sizeof(NSInteger));
-                MSHookMemory(recentsSectionSym, &recentsSection, sizeof(NSInteger));
-                dlclose(handle);
-            }
             userDefaults = [NSUserDefaults standardUserDefaults];
             actionManager = [%c(CKSpringBoardActionManager) new];
             notificationCentre.postHandler = ^NSDictionary *(NSString *name) {
@@ -1171,6 +1165,20 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
             [notificationCentre observeNotificationsWithName:userDefaultsDidUpdateNotificationName from:[NSDistributedNotificationCenter defaultCenter]];
             [notificationCentre postNotificationWithName:iCloudRestoreNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
             %init(Messages);
+            if (isQuickSwitchEnabled) {
+                void *handle = dlopen("/Library/Frameworks/CydiaSubstrate.framework/CydiaSubstrate", RTLD_NOW);
+                if (handle) {
+                    MSHookMemory = (MSHookMemory_t)(dlsym(handle, "MSHookMemory"));
+                    favouritesSectionSym = MSFindSymbol(MSGetImageByName("/System/Library/PrivateFrameworks/ChatKit.framework/ChatKit"), "_CKAppStripFavoritesSection");
+                    recentsSectionSym = MSFindSymbol(MSGetImageByName("/System/Library/PrivateFrameworks/ChatKit.framework/ChatKit"), "_CKAppStripRecentsSection");
+                    const NSInteger favouritesSection = 1;
+                    const NSInteger recentsSection = 2;
+                    MSHookMemory(favouritesSectionSym, &favouritesSection, sizeof(NSInteger));
+                    MSHookMemory(recentsSectionSym, &recentsSection, sizeof(NSInteger));
+                    dlclose(handle);
+                }
+                %init(Messages_QuickSwitch);
+            }
 #ifdef MOCKUP
             %init(Mockup);
 #endif

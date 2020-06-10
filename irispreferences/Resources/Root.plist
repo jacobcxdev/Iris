@@ -264,6 +264,27 @@
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>label</key>
+            <string>Quick Switch Preferences</string>
+            <key>footerText</key>
+            <string>Enable quick switching between pinned conversations from the Messages plugin switcher.
+For Quick Switch to work, please navigate to Settings > Messages > Show Contact Photos, and ensure the toggle is enabled.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <true/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.iris</string>
+            <key>key</key>
+            <string>isQuickSwitchEnabled</string>
+            <key>label</key>
+            <string>Enable Quick Switch</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
             <string>Developer</string>
             <key>footerText</key>
             <string>Copyright © 2020 JacobCXDev. All rights reserved.</string>
