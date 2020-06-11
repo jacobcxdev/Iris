@@ -7,7 +7,6 @@
 //
 
 #import "Tweak.h"
-#import <PAC.h>
 #import <LocalAuthentication/LocalAuthentication.h>
 #import <libJCX/Utilities.h>
 #import "../View/IrisAvatarCollectionViewCell.h"
@@ -139,7 +138,7 @@ static NSArray *defaultTagsArray() {
     ] mutableCopy];
 }
 
-static void persistDefaultsState(bool postiCloudNotification) {
+static void persistDefaultsState(bool postiCloudNotification, bool persistCurrentFlagTag) {
     if (!userDefaults) return;
     [userDefaults setInteger:shownUnreadCount forKey:shownUnreadCountKey];
     [userDefaults setInteger:hiddenUnreadCount forKey:hiddenUnreadCountKey];
@@ -153,7 +152,8 @@ static void persistDefaultsState(bool postiCloudNotification) {
     }
     if (postiCloudNotification) {
         [notificationCentre postNotificationWithName:iCloudPersistNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
-    } else {
+    }
+    if (persistCurrentFlagTag) {
         [userDefaults setObject:@(currentFlag) forKey:currentFlagKey];
         NSError *error = nil;
         NSData *currentTagData = [NSKeyedArchiver archivedDataWithRootObject:currentTag requiringSecureCoding:true error:&error];
@@ -175,11 +175,20 @@ static void persistiCloudState() {
     }
 }
 
-static void updateTagsArray(NSMutableArray<IrisConversationTag *> *tags, bool shouldSwitchToShownFlag, bool shouldUpdateMenuButtons, bool shouldPersistDefaultsState) {
+static void updateTagsArray(NSMutableArray<IrisConversationTag *> *tags, bool shouldReloadTableView, bool shouldUpdateMenuButtons, bool shouldPersistDefaultsState) {
     tagsArray = tags;
-    [ckclc _switchFlag:shouldSwitchToShownFlag ? Shown : currentFlag tag:shouldSwitchToShownFlag ? nil : currentTag];
+    if (shouldReloadTableView) {
+        bool shouldSwitch = false;
+        if (currentFlag == Tagged) {
+            NSUInteger idx = [tagsArray indexOfObjectPassingTest:^BOOL(IrisConversationTag *obj, NSUInteger idx, BOOL *stop) {
+                return [obj.uuid.UUIDString isEqualToString:currentTag.uuid.UUIDString];
+            }];
+            shouldSwitch = currentTag && idx == NSNotFound;
+        }
+        [ckclc _switchFlag:shouldSwitch ? Shown : currentFlag tag:shouldSwitch ? nil : currentTag];
+    }
     if (shouldPersistDefaultsState) {
-        persistDefaultsState(true);
+        persistDefaultsState(true, true);
     }
     if (shouldUpdateMenuButtons && menuButton) {
         updateMenuButtons();
@@ -369,7 +378,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     } else {
         [pinnedConversationList removeObject:[self uniqueIdentifier]];
     }
-    persistDefaultsState(true);
+    persistDefaultsState(true, false);
     return %orig;
 }
 %new
@@ -386,12 +395,12 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
 }
 - (void)setMutedUntilDate:(NSDate *)date {
     updateConversationsFlagsDict([self uniqueIdentifier], true, Muted);
-    persistDefaultsState(true);
+    persistDefaultsState(true, false);
     return %orig;
 }
 - (void)unmute {
     updateConversationsFlagsDict([self uniqueIdentifier], false, Muted);
-    persistDefaultsState(true);
+    persistDefaultsState(true, false);
     return %orig;
 }
 %new
@@ -404,7 +413,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     if (self.hidden == shown) {
         self.hidden = !shown;
     }
-    persistDefaultsState(true);
+    persistDefaultsState(true, false);
 }
 %new
 - (BOOL)isHidden {
@@ -416,7 +425,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     if (self.shown == hidden) {
         self.shown = !hidden;
     }
-    persistDefaultsState(true);
+    persistDefaultsState(true, false);
 }
 %new
 - (BOOL)shouldHide {
@@ -432,7 +441,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     if (!tagged) {
         [conversationsTagDict removeObjectForKey:[self uniqueIdentifier]];
     }
-    persistDefaultsState(true);
+    persistDefaultsState(true, false);
 }
 %new
 - (BOOL)tagMatchesTag:(IrisConversationTag *)tag {
@@ -458,7 +467,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     if (tag) {
         conversationsTagDict[[self uniqueIdentifier]] = tag.uuid.UUIDString;
     }
-    persistDefaultsState(true);
+    persistDefaultsState(true, false);
 }
 %end
 
@@ -763,7 +772,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     [self.tableView reloadSections:indexSet withRowAnimation:UITableViewRowAnimationAutomatic];
     [self.tableView endUpdates];
 
-    persistDefaultsState(false);
+    persistDefaultsState(false, true);
 }
 %end
 
@@ -806,7 +815,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
 
 %hook SMSApplication
 - (void)applicationWillTerminate {
-    persistDefaultsState(true);
+    persistDefaultsState(true, true);
     return %orig;
 }
 %end
@@ -1216,7 +1225,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
                     persistiCloudState();
                 } else if ([notification.name isEqualToString:iCloudRestoreNotificationName] || [notification.name isEqualToString:NSUbiquitousKeyValueStoreDidChangeExternallyNotification]) {
                     restoreiCloudState(true, false);
-                    persistDefaultsState(false);
+                    persistDefaultsState(false, false);
                     [notificationCentre postNotificationWithName:userDefaultsDidUpdateNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
                 }
             };
