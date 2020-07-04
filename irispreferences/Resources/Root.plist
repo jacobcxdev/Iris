@@ -172,6 +172,24 @@
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>footerText</key>
+            <string>Allow muted conversations to contribute to badge counts.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.iris</string>
+            <key>key</key>
+            <string>shouldShowMutedUnreadCountInBadges</string>
+            <key>label</key>
+            <string>Show Badges from Muted Conversations</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>footerText</key>
             <string>Hide the badge from the Iris button inside Messages.</string>
         </dict>
         <dict>

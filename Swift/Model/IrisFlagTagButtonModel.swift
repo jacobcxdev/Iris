@@ -15,6 +15,8 @@ import UIKit
     static let shownTintColour: UIColor = .systemBlue
     static let hiddenImage = UIImage(systemName: "questionmark.circle")
     static let hiddenTintColour: UIColor = .systemBlue
+    static let unreadImage = UIImage(systemName: "message.circle")
+    static let unreadTintColour: UIColor = .systemBlue
     static let defaultImage = UIImage(systemName: "circle.fill")
     static let defaultTintColour: UIColor = .systemBlue
 
@@ -39,10 +41,12 @@ import UIKit
     }
 
     // MARK: - Funcs
-    @objc public func updateBadgeCount(shownUnreadCount: UInt, hiddenUnreadCount: UInt) {
+    @objc public func updateBadgeCount(shownUnreadCount: UInt, hiddenUnreadCount: UInt, shouldSecureHiddenList: Bool) {
         switch conversationFlag {
         case .Hidden:
             badgeCount = hiddenUnreadCount
+        case .Unread:
+            badgeCount = shouldSecureHiddenList ? shownUnreadCount : shownUnreadCount + hiddenUnreadCount
         case .Tagged:
             if let tag = conversationTag {
                 badgeCount = tag.unreadCount
@@ -60,6 +64,9 @@ import UIKit
         case .Hidden:
             image = IrisFlagTagButtonModel.hiddenImage
             tintColour = conversationTag?.colour ?? IrisFlagTagButtonModel.hiddenTintColour
+        case .Unread:
+            image = IrisFlagTagButtonModel.unreadImage
+            tintColour = conversationTag?.colour ?? IrisFlagTagButtonModel.unreadTintColour
         default:
             image = IrisFlagTagButtonModel.defaultImage
             tintColour = conversationTag?.colour ?? IrisFlagTagButtonModel.defaultTintColour

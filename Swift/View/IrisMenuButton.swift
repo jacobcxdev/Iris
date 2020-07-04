@@ -312,8 +312,8 @@ import UIKit
         (collectionView.visibleCells as! [IrisButtonCollectionViewCell]).forEach { $0.updateButton(animated: animated) }
     }
 
-    @objc public func updateButtonBadges(shownUnreadCount: UInt, hiddenUnreadCount: UInt, animated: Bool) {
-        buttonModels.forEach { ($0 as? IrisFlagTagButtonModel)?.updateBadgeCount(shownUnreadCount: shownUnreadCount, hiddenUnreadCount: hiddenUnreadCount) }
+    @objc public func updateButtonBadges(shownUnreadCount: UInt, hiddenUnreadCount: UInt, shouldSecureHiddenList: Bool, animated: Bool) {
+        buttonModels.forEach { ($0 as? IrisFlagTagButtonModel)?.updateBadgeCount(shownUnreadCount: shownUnreadCount, hiddenUnreadCount: hiddenUnreadCount, shouldSecureHiddenList: shouldSecureHiddenList) }
         updateButtons(animated: animated)
     }
 

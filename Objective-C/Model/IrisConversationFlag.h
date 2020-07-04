@@ -12,5 +12,6 @@ typedef NS_OPTIONS(NSUInteger, IrisConversationFlag) {
     Shown = 1 << 0,
     Hidden = 1 << 1,
     Tagged = 1 << 2,
-    Muted = 1 << 3
+    Muted = 1 << 3,
+    Unread = 1 << 4
 };

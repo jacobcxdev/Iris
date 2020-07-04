@@ -35,6 +35,8 @@ static bool shouldHideHiddenUnreadCountFromSBBadge = false;
 static NSString *shouldHideHiddenUnreadCountFromSBBadgeKey = @"shouldHideHiddenUnreadCountFromSBBadge";
 static bool shouldHideButtonBadge = false;
 static NSString *shouldHideButtonBadgeKey = @"shouldHideButtonBadge";
+static bool shouldShowMutedUnreadCountInBadges = false;
+static NSString *shouldShowMutedUnreadCountInBadgesKey = @"shouldShowMutedUnreadCountInBadges";
 static bool shouldSecureHiddenList = false;
 static NSString *shouldSecureHiddenListKey = @"shouldSecureHiddenList";
 static bool shouldShowButtonAfterAuthentication = false;
@@ -101,6 +103,8 @@ static void updateMenuButtons() {
     [buttonModels addObject:shownButtonModel];
     IrisFlagTagButtonModel *hiddenButtonModel = [[IrisFlagTagButtonModel alloc] initWithConversationFlag:Hidden conversationTag:nil];
     [buttonModels addObject:hiddenButtonModel];
+    IrisFlagTagButtonModel *unreadButtonModel = [[IrisFlagTagButtonModel alloc] initWithConversationFlag:Unread conversationTag:nil];
+    [buttonModels addObject:unreadButtonModel];
     for (IrisConversationTag *tag in tagsArray) {
         IrisFlagTagButtonModel *buttonModel = [[IrisFlagTagButtonModel alloc] initWithConversationFlag:Tagged conversationTag:tag];
         [buttonModels addObject:buttonModel];
@@ -214,9 +218,9 @@ static void restoreiCloudState(bool shouldUpdateTagsArray, bool shouldUpdateMenu
 static void updateBadgeCount() {
     if (!menuButton) return;
     if (!shouldHideButtonBadge) {
-        [menuButton setBadgeCount:currentFlag == Shown ? hiddenUnreadCount : currentFlag == Tagged && currentTag ? shownUnreadCount + hiddenUnreadCount - currentTag.unreadCount : shownUnreadCount animated:true];
+        [menuButton setBadgeCount:currentFlag == Shown ? hiddenUnreadCount : currentFlag == Unread ? shouldSecureHiddenList ? shownUnreadCount : shownUnreadCount + hiddenUnreadCount : currentFlag == Tagged && currentTag ? shownUnreadCount + hiddenUnreadCount - currentTag.unreadCount : shownUnreadCount animated:true];
     }
-    [menuButton updateButtonBadgesWithShownUnreadCount:shownUnreadCount hiddenUnreadCount:hiddenUnreadCount animated:true];
+    [menuButton updateButtonBadgesWithShownUnreadCount:shownUnreadCount hiddenUnreadCount:hiddenUnreadCount shouldSecureHiddenList:shouldSecureHiddenList animated:true];
 }
 
 static void updateConversationsFlagsDict(NSString *key, bool condition, IrisConversationFlag flag) {
@@ -243,16 +247,21 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     for (CKConversation *conversation in conversations) {
         bool allowed = false;
         bool hidden = conversation.shouldHide;
-        bool hiddenForTag = shouldSecureHiddenList && hidden;
-        bool muted = conversation.muted;
+        bool shouldSecure = shouldSecureHiddenList && hidden;
+        bool muted = !shouldShowMutedUnreadCountInBadges && conversation.muted;
         switch (currentFlag) {
         case Hidden:
             if (hidden) {
                 allowed = true;
             }
             break;
+        case Unread:
+            if ([conversation hasUnreadMessages] && !shouldSecure) {
+                allowed = true;
+            }
+            break;
         case Tagged:
-            if ([conversation tagMatchesTag:currentTag] && !hiddenForTag) {
+            if ([conversation tagMatchesTag:currentTag] && !shouldSecure) {
                 allowed = true;
             }
             break;
@@ -275,7 +284,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
             } else if (!muted) {
                 shownUnreadCount += conversation.unreadCount;
             }
-            if (!muted && !hiddenForTag && conversation.tag) {
+            if (!muted && !shouldSecure && conversation.tag) {
                 conversation.tag.unreadCount += conversation.unreadCount;
             }
         }
@@ -1073,6 +1082,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
         shouldHideUnknownSenders = [settings objectForKey:shouldHideUnknownSendersKey] && [[settings objectForKey:shouldHideUnknownSendersKey] boolValue];
         shouldHideHiddenUnreadCountFromSBBadge = [settings objectForKey:shouldHideHiddenUnreadCountFromSBBadgeKey] && [[settings objectForKey:shouldHideHiddenUnreadCountFromSBBadgeKey] boolValue];
         shouldHideButtonBadge = [settings objectForKey:shouldHideButtonBadgeKey] && [[settings objectForKey:shouldHideButtonBadgeKey] boolValue];
+        shouldShowMutedUnreadCountInBadges = [settings objectForKey:shouldShowMutedUnreadCountInBadgesKey] && [[settings objectForKey:shouldShowMutedUnreadCountInBadgesKey] boolValue];
         shouldSecureHiddenList = [settings objectForKey:shouldSecureHiddenListKey] && [[settings objectForKey:shouldSecureHiddenListKey] boolValue];
         shouldShowButtonAfterAuthentication = [settings objectForKey:shouldShowButtonAfterAuthenticationKey] && [[settings objectForKey:shouldShowButtonAfterAuthenticationKey] boolValue];
         shouldAutoHideHiddenList = [settings objectForKey:shouldAutoHideHiddenListKey] && [[settings objectForKey:shouldAutoHideHiddenListKey] boolValue];

@@ -1,7 +1,7 @@
 export ARCHS = arm64 arm64e
 export TARGET := iphone::latest:13.0
 export ADDITIONAL_CFLAGS = -DTHEOS_LEAN_AND_MEAN # -DMOCKUP
-INSTALL_TARGET_PROCESSES = SpringBoard imagent tccd
+INSTALL_TARGET_PROCESSES = MobileSMS Preferences # SpringBoard imagent tccd
 
 include $(THEOS)/makefiles/common.mk
 
