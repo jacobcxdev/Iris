@@ -50,6 +50,7 @@
     UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {}];
     [alert addAction:confirmAction];
     [alert addAction:cancelAction];
+    alert.preferredAction = confirmAction;
     [self presentViewController:alert animated:true completion:nil];
 }
 - (void)done {
@@ -77,6 +78,7 @@
     UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {}];
     [alert addAction:confirmAction];
     [alert addAction:cancelAction];
+    alert.preferredAction = confirmAction;
     [self presentViewController:alert animated:true completion:nil];
 }
 - (void)removeListEntryAtIndexPath:(NSIndexPath * _Nonnull)indexPath {
@@ -86,7 +88,7 @@
 }
 - (void)resetDefaultEntries {
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Reset list to defaults?" message:@"\nNB: This will RESET ALL tags.\n" preferredStyle:UIAlertControllerStyleAlert];
-    UIAlertAction *confirmAction = [UIAlertAction actionWithTitle:@"Reset" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    UIAlertAction *confirmAction = [UIAlertAction actionWithTitle:@"Reset" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
         [self.tableView beginUpdates];
         for (int idx = 0; idx < self->_list.count; idx++) {
             [self.tableView deleteRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:idx inSection:0]] withRowAnimation:UITableViewRowAnimationRight];
@@ -101,11 +103,12 @@
     UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {}];
     [alert addAction:confirmAction];
     [alert addAction:cancelAction];
+    alert.preferredAction = confirmAction;
     [self presentViewController:alert animated:true completion:nil];
 }
 - (void)resetEntries {
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Reset list completely?" message:@"\nNB: This will REMOVE ALL tags.\n" preferredStyle:UIAlertControllerStyleAlert];
-    UIAlertAction *confirmAction = [UIAlertAction actionWithTitle:@"Reset" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    UIAlertAction *confirmAction = [UIAlertAction actionWithTitle:@"Reset" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
         [self.tableView beginUpdates];
         for (int idx = 0; idx < self->_list.count; idx++) {
             [self.tableView deleteRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:idx inSection:0]] withRowAnimation:UITableViewRowAnimationAutomatic];
@@ -117,6 +120,7 @@
     UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {}];
     [alert addAction:confirmAction];
     [alert addAction:cancelAction];
+    alert.preferredAction = confirmAction;
     [self presentViewController:alert animated:true completion:nil];
 }
 - (void)saveList:(bool)isBeingDismissed {

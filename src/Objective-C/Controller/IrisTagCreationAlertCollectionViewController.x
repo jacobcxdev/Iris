@@ -101,7 +101,7 @@
 - (void)didSelectButton:(IrisButtonModel * _Nonnull)buttonModel {
     self.selectedButtonModel = buttonModel;
     if (self.textFields.count > 0) {
-        ((UITextField *)self.textFields[0]).placeholder = [buttonModel isKindOfClass:[IrisFlagTagButtonModel class]] && ((IrisFlagTagButtonModel *)buttonModel).conversationTag ? ((IrisFlagTagButtonModel *)buttonModel).conversationTag.name : self.originalTag ? self.originalTag.name : @"Other";
+        ((UITextField *)self.textFields[0]).placeholder = self.originalTag.name ?: [buttonModel isKindOfClass:[IrisFlagTagButtonModel class]] && ((IrisFlagTagButtonModel *)buttonModel).conversationTag ? ((IrisFlagTagButtonModel *)buttonModel).conversationTag.name : @"Other";
     }
     if (buttonModel.tag == 1 && UIApplication.sharedApplication.connectedScenes.count > 0) {
         UIWindowScene *windowScene = nil;
