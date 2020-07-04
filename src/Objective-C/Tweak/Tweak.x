@@ -881,10 +881,6 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
 - (id)switcherView:(CKBrowserSwitcherFooterView *)switcherView modelAtIndexPath:(NSIndexPath *)indexPath type:(NSInteger *)type {
     return indexPath.section == 0 ? nil : %orig;
 }
-- (NSIndexPath *)switcherView:(CKBrowserSwitcherFooterView *)switcherView indexPathOfModelWithIdentifier:(NSString *)identifier {
-    NSIndexPath *orig = %orig;
-    return [NSIndexPath indexPathForItem:orig.item inSection:orig.section + 1];
-}
 %end
 
 %hook CKAppStripLayout
