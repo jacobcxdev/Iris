@@ -57,6 +57,7 @@
 @property (nonatomic, readonly) BOOL shouldHide;
 @property (nonatomic, readwrite) IrisConversationTag *tag;
 + (BOOL)pinnedConversationsEnabled;
+- (NSInteger)compareBySequenceNumberAndDateDescending:(CKConversation *)conversation;
 - (NSArray *)orderedContactsWithMaxCount:(NSUInteger)maxCount keysToFetch:(NSArray *)keysToFetch;
 - (NSNumber *)pinnedIndex;
 - (void)setMutedUntilDate:(NSDate *)date;
@@ -66,12 +67,15 @@
 @end
 
 @interface CKConversationList : NSObject
+@property (nonatomic, retain) NSMutableArray *filteredConversations;
+@property (nonatomic) bool updating;
 + (instancetype)sharedConversationList;
 - (CKConversation *)_conversationForChat:(IMChat *)chat;
+- (void)_setConversations:(NSArray *)conversations forFilterMode:(NSUInteger)filterMode;
 - (NSMutableArray *)conversations;
-- (NSMutableArray *)conversationsForFlag:(IrisConversationFlag)flag tag:(IrisConversationTag *)tag;
+- (NSMutableArray *)conversationsForFlag:(IrisConversationFlag)flag tag:(IrisConversationTag *)tag updateUnreadCount:(BOOL)updateUnreadCount;
 - (NSMutableArray *)pinnedConversationsForFlag:(IrisConversationFlag)flag tag:(IrisConversationTag *)tag;
-- (NSMutableArray *)recentConversationsForFlag:(IrisConversationFlag)flag tag:(IrisConversationTag *)tag;
+- (void)updateConversationListsAndSortIfEnabled;
 @end
 
 @interface CKConversationListStandardCell : UITableViewCell {
@@ -103,6 +107,7 @@
 @end
 
 @interface CKConversationListController : UITableViewController<UITableViewDelegate, UITableViewDataSource>
+@property (nonatomic, copy, readwrite) NSArray *frozenConversations;
 @property (nonatomic, weak, readwrite) CKMessagesController *messagesController;
 - (void)_chatUnreadCountDidChange:(NSNotification *)notification;
 - (void)_conversationListDidChange:(NSNotification *)notification;
@@ -206,7 +211,7 @@
 // IMAgent Interfaces
 
 @interface IMDBadgeUtilities : NSObject
-- (void)updateBadgeForUnreadCountChangeIfNeeded:(long long)count;
+- (void)updateBadgeForUnreadCountChangeIfNeeded:(NSInteger)count;
 @end
 
 // TCCd Interfaces

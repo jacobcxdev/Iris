@@ -253,7 +253,6 @@ static void updateConversationsFlagsDict(NSString *key, bool condition, IrisConv
 
 static NSMutableArray *filterConversations(NSArray *conversations, IrisConversationFlag currentFlag, IrisConversationTag *currentTag, bool shouldFilterPinnedConversations, bool updateUnreadCount) {
     NSMutableArray *filteredConversations = [NSMutableArray new];
-    NSMutableArray *pendingFilteredConversations = [NSMutableArray new];
     if (updateUnreadCount) {
         shownUnreadCount = 0;
         hiddenUnreadCount = 0;
@@ -289,11 +288,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
             break;
         }
         if (allowed) {
-            if (shouldFilterPinnedConversations && conversation.pinned) {
-                [filteredConversations addObject:conversation];
-            } else {
-                [pendingFilteredConversations addObject:conversation];
-            }
+            [filteredConversations addObject:conversation];
         }
         if (updateUnreadCount) {
             if (hidden && !muted) {
@@ -306,10 +301,6 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
             }
         }
     }
-    [filteredConversations sortUsingComparator:^NSComparisonResult(CKConversation* a, CKConversation* b) {
-        return [[a pinnedIndex] compare:[b pinnedIndex]];
-    }];
-    [filteredConversations addObjectsFromArray:pendingFilteredConversations];
     if (updateUnreadCount) {
         updateBadgeCount();
         [notificationCentre postNotificationUsingPostHandlerWithName:localUpdateNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
@@ -374,6 +365,15 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
 %hook CKConversation
 + (BOOL)pinnedConversationsEnabled {
     return true;
+}
+- (NSInteger)compareBySequenceNumberAndDateDescending:(CKConversation *)conversation {
+    if (self.pinned && conversation.pinned) {
+        return [[self  pinnedIndex] compare:[conversation pinnedIndex]];
+    }
+    if (self.pinned ^ conversation.pinned) {
+        return self.pinned ? NSOrderedAscending : NSOrderedDescending;
+    }
+    return %orig;
 }
 - (BOOL)isPinned {
     return [pinnedConversationList containsObject:[self uniqueIdentifier]];
@@ -478,18 +478,29 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
 %end
 
 %hook CKConversationList
+%property (nonatomic, retain) NSMutableArray *filteredConversations;
+%property (nonatomic) bool updating;
+- (void)_setConversations:(NSArray *)conversations forFilterMode:(NSUInteger)filterMode {
+    return conversations ? %orig(filterConversations(conversations, currentFlag, currentTag, true, false), filterMode) : %orig;
+}
 - (NSMutableArray *)conversations {
-    return filterConversations(%orig, currentFlag, currentTag, true, true);
+    return self.updating ? [self conversationsForFlag:currentFlag tag:currentTag updateUnreadCount:true] : self.filteredConversations ?: %orig;
 }
 %new
-- (NSMutableArray *)conversationsForFlag:(IrisConversationFlag)flag tag:(IrisConversationTag *)tag {
-    return filterConversations((NSMutableArray *)[self valueForKey:@"_trackedConversations"], flag, tag, true, false);
+- (NSMutableArray *)conversationsForFlag:(IrisConversationFlag)flag tag:(IrisConversationTag *)tag updateUnreadCount:(BOOL)updateUnreadCount {
+    return filterConversations((NSMutableArray *)[self valueForKey:@"_trackedConversations"], flag, tag, true, updateUnreadCount);
 }
 %new
 - (NSMutableArray *)pinnedConversationsForFlag:(IrisConversationFlag)flag tag:(IrisConversationTag *)tag {
-    return [[[self conversationsForFlag:flag tag:tag] filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(CKConversation *evaluatedObject, NSDictionary<NSString *,id> *bindings) {
+    return [[[self conversationsForFlag:flag tag:tag updateUnreadCount:false] filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(CKConversation *evaluatedObject, NSDictionary<NSString *,id> *bindings) {
         return evaluatedObject.pinned;
     }]] mutableCopy];
+}
+- (void)updateConversationListsAndSortIfEnabled {
+    self.updating = true;
+    %orig;
+    self.filteredConversations = [self conversationsForFlag:currentFlag tag:currentTag updateUnreadCount:true];
+    self.updating = false;
 }
 %end
 
@@ -497,9 +508,6 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
 - (void)_chatUnreadCountDidChange:(NSNotification *)notification {
     [[self conversationList] conversations];
     return %orig;
-}
-- (NSArray *)activeConversations {
-    return [filterConversations(%orig, currentFlag, currentTag, true, false) copy];
 }
 - (void)viewDidLoad {
     ckclc = self;
@@ -667,6 +675,8 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
             conversation.hidden = true;
         }
         [self.tableView beginUpdates];
+        [self _updateConversationListsAndSortIfEnabled];
+        self.frozenConversations = [filterConversations(self.frozenConversations, currentFlag, currentTag, true, false) copy];
         [self.tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
         [self.tableView endUpdates];
         completionHandler(true);
@@ -1028,7 +1038,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     imdbu = orig;
     return orig;
 }
-- (void)updateBadgeForUnreadCountChangeIfNeeded:(long long)count {
+- (void)updateBadgeForUnreadCountChangeIfNeeded:(NSInteger)count {
     return shouldHideHiddenUnreadCountFromSBBadge ? %orig(shownUnreadCount) : %orig;
 }
 %end
