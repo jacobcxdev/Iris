@@ -2,4 +2,5 @@
 
 @interface IrisRootListController : JCXRootListController
 - (void)killall;
+- (void)pushFlagTagSelectionViewController;
 @end

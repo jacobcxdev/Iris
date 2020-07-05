@@ -1,12 +1,12 @@
 include $(THEOS)/makefiles/common.mk
 
 BUNDLE_NAME = IrisPreferences
-IrisPreferences_FILES = $(wildcard *.m)
+IrisPreferences_FILES = $(wildcard *.m) $(wildcard src/Swift/Model/*ButtonModel.swift) src/Objective-C/Model/IrisConversationTag.m src/Objective-C/Globals.m
+IrisPreferences_SWIFT_BRIDGING_HEADER = src/Objective-C/Iris-Bridging-Header.h
 IrisPreferences_INSTALL_PATH = /Library/PreferenceBundles
-IrisPreferences_FRAMEWORKS = UIKit
 IrisPreferences_PRIVATE_FRAMEWORKS = Preferences
 IrisPreferences_EXTRA_FRAMEWORKS += libJCX
-IrisPreferences_CFLAGS = -fobjc-arc
+IrisPreferences_CFLAGS = -fobjc-arc -DIS_PREFS
 
 include $(THEOS_MAKE_PATH)/bundle.mk
 

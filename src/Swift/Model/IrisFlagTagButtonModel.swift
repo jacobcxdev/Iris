@@ -22,6 +22,9 @@ import UIKit
     static let defaultImage = UIImage(systemName: "circle.fill")
     static let defaultTintColour: UIColor = .systemBlue
 
+    // MARK: - Properties
+    @objc public var name = ""
+
     // MARK: - Observed Properties
     @objc public var conversationFlag: IrisConversationFlag {
         didSet {
@@ -61,18 +64,23 @@ import UIKit
     public func updateFlagTag() {
         switch conversationFlag {
         case .Shown:
+            name = "Shown"
             image = IrisFlagTagButtonModel.shownImage
             tintColour = conversationTag?.colour ?? IrisFlagTagButtonModel.shownTintColour
         case .Hidden:
+            name = "Hidden"
             image = IrisFlagTagButtonModel.hiddenImage
             tintColour = conversationTag?.colour ?? IrisFlagTagButtonModel.hiddenTintColour
         case .Unread:
+            name = "Unread"
             image = IrisFlagTagButtonModel.unreadImage
             tintColour = conversationTag?.colour ?? IrisFlagTagButtonModel.unreadTintColour
         case .Tagged:
+            name = conversationTag == nil ? "Untagged" : conversationTag?.name ?? ""
             image = conversationTag == nil ? IrisFlagTagButtonModel.untaggedImage : IrisFlagTagButtonModel.defaultImage
             tintColour = conversationTag?.colour ?? IrisFlagTagButtonModel.untaggedTintColour
         default:
+            name = ""
             image = IrisFlagTagButtonModel.defaultImage
             tintColour = conversationTag?.colour ?? IrisFlagTagButtonModel.defaultTintColour
         }

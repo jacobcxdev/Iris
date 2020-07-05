@@ -6,12 +6,12 @@ INSTALL_TARGET_PROCESSES = MobileSMS Preferences # SpringBoard imagent tccd
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = Iris
-Iris_FILES = $(wildcard Objective-C/**/*.x) $(wildcard Objective-C/**/*.m) $(wildcard Swift/**/*.*)
-Iris_SWIFT_BRIDGING_HEADER = Objective-C/Iris-Bridging-Header.h
+Iris_FILES = $(wildcard src/Objective-C/**/*.x) $(wildcard src/Objective-C/*m) $(wildcard src/Objective-C/**/*.m) $(wildcard src/Swift/**/*.*)
+Iris_SWIFT_BRIDGING_HEADER = src/Objective-C/Iris-Bridging-Header.h
 Iris_EXTRA_FRAMEWORKS = libJCX Alderis
 Iris_CFLAGS = -fobjc-arc
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 
-SUBPROJECTS = irispreferences
+SUBPROJECTS = Preferences
 include $(THEOS_MAKE_PATH)/aggregate.mk

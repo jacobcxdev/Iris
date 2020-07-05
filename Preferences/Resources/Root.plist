@@ -58,6 +58,40 @@
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>label</key>
+            <string>Default List Preferences</string>
+            <key>footerText</key>
+            <string>Choose the default conversation list.</string>
+        </dict>
+        <dict>
+            <key>cellClass</key>
+            <string>JCXDisclosureCell</string>
+            <key>action</key>
+            <string>pushFlagTagSelectionViewController</string>
+            <key>label</key>
+            <string>Default List</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>footerText</key>
+            <string>Show the default conversation list (instead of the previously shown conversation list) when you launch the Messages application.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.iris</string>
+            <key>key</key>
+            <string>shouldOpenWithDefaults</string>
+            <key>label</key>
+            <string>Open with Default List</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
             <string>Activation Preferences</string>
             <key>footerText</key>
             <string>Show the Iris button in the navigation bar inside Messages.</string>
@@ -78,7 +112,7 @@
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>footerText</key>
-            <string>Toggle between the shown and hidden conversation lists by shaking your device.</string>
+            <string>Toggle between the default and hidden conversation lists by shaking your device.</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -96,7 +130,7 @@
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>footerText</key>
-            <string>Toggle between the shown and hidden conversation lists by pressing both volume buttons simultaneously.</string>
+            <string>Toggle between the default and hidden conversation lists by pressing both volume buttons simultaneously.</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -114,7 +148,7 @@
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>footerText</key>
-            <string>Toggle between the shown and hidden conversation lists by toggling your device's ringer switch 3 times.</string>
+            <string>Toggle between the default and hidden conversation lists by toggling your device's ringer switch 3 times.</string>
         </dict>
         <dict>
             <key>cell</key>

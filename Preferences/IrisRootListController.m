@@ -1,4 +1,6 @@
 #import "IrisRootListController.h"
+#import "IrisFlagTagSelectionViewController.h"
+#import "src/Objective-C/Globals.h"
 
 @implementation IrisRootListController
 - (void)viewDidLoad {
@@ -19,5 +21,9 @@
     [killallSpringBoard setLaunchPath:@"/usr/bin/killall"];
     [killallSpringBoard setArguments:@[@"-9", @"SpringBoard"]];
     [killallSpringBoard launch];
+}
+- (void)pushFlagTagSelectionViewController {
+    IrisFlagTagSelectionViewController *viewController = [IrisFlagTagSelectionViewController controllerWithTitle:@"Select Default List" defaults:@"com.apple.MobileSMS"];
+    [self.navigationController pushViewController:viewController animated:true];
 }
 @end
