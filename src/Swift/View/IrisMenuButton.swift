@@ -155,11 +155,10 @@ import UIKit
     // MARK: - Override Funcs
     public override func didMoveToWindow() {
         super.didMoveToWindow()
-        guard let window = window else {
-            return
+        if let view = window?.rootViewController?.view {
+            topAnchor.constraint(greaterThanOrEqualTo: view.topAnchor).isActive = true
+            bottomAnchor.constraint(lessThanOrEqualTo: view.bottomAnchor).isActive = true
         }
-        topAnchor.constraint(greaterThanOrEqualTo: window.topAnchor).isActive = true
-        bottomAnchor.constraint(lessThanOrEqualTo: window.bottomAnchor).isActive = true
     }
 
     public override func layoutSubviews() {
@@ -312,8 +311,8 @@ import UIKit
         (collectionView.visibleCells as! [IrisButtonCollectionViewCell]).forEach { $0.updateButton(animated: animated) }
     }
 
-    @objc public func updateButtonBadges(shownUnreadCount: UInt, hiddenUnreadCount: UInt, animated: Bool) {
-        buttonModels.forEach { ($0 as? IrisFlagTagButtonModel)?.updateBadgeCount(shownUnreadCount: shownUnreadCount, hiddenUnreadCount: hiddenUnreadCount) }
+    @objc public func updateButtonBadges(shownUnreadCount: UInt, hiddenUnreadCount: UInt, shouldSecureHiddenList: Bool, animated: Bool) {
+        buttonModels.forEach { ($0 as? IrisFlagTagButtonModel)?.updateBadgeCount(shownUnreadCount: shownUnreadCount, hiddenUnreadCount: hiddenUnreadCount, shouldSecureHiddenList: shouldSecureHiddenList) }
         updateButtons(animated: animated)
     }
 

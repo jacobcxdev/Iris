@@ -7,9 +7,9 @@
 //
 
 #import "Tweak.h"
-#import <PAC.h>
 #import <LocalAuthentication/LocalAuthentication.h>
 #import <libJCX/Utilities.h>
+#import "../Globals.h"
 #import "../View/IrisAvatarCollectionViewCell.h"
 #import "../View/IrisRoundedBorderLayer.h"
 #import "../Controller/IrisTagListTableViewController.h"
@@ -21,6 +21,8 @@ static MSHookMemory_t MSHookMemory;
 
 // Static Variables
 
+static bool shouldOpenWithDefaults = false;
+static NSString *shouldOpenWithDefaultsKey = @"shouldOpenWithDefaults";
 static bool shouldShowButton = true;
 static NSString *shouldShowButtonKey = @"shouldShowButton";
 static bool shouldToggleWhenShaken = false;
@@ -35,6 +37,8 @@ static bool shouldHideHiddenUnreadCountFromSBBadge = false;
 static NSString *shouldHideHiddenUnreadCountFromSBBadgeKey = @"shouldHideHiddenUnreadCountFromSBBadge";
 static bool shouldHideButtonBadge = false;
 static NSString *shouldHideButtonBadgeKey = @"shouldHideButtonBadge";
+static bool shouldShowMutedUnreadCountInBadges = false;
+static NSString *shouldShowMutedUnreadCountInBadgesKey = @"shouldShowMutedUnreadCountInBadges";
 static bool shouldSecureHiddenList = false;
 static NSString *shouldSecureHiddenListKey = @"shouldSecureHiddenList";
 static bool shouldShowButtonAfterAuthentication = false;
@@ -43,6 +47,11 @@ static bool shouldAutoHideHiddenList = false;
 static NSString *shouldAutoHideHiddenListKey = @"shouldAutoHideHiddenList";
 static bool shouldHideSwipeActions = false;
 static NSString *shouldHideSwipeActionsKey = @"shouldHideSwipeActions";
+static bool isQuickSwitchEnabled = true;
+static NSString *isQuickSwitchEnabledKey = @"isQuickSwitchEnabled";
+
+static IrisConversationFlag defaultFlag = Shown;
+static NSString *defaultTagUUID;
 
 static IrisConversationFlag currentFlag = Shown;
 static NSString *currentFlagKey = @"com.jacobcxdev.iris.currentFlag";
@@ -64,7 +73,6 @@ static NSString *conversationsFlagsDictKey = @"com.jacobcxdev.iris.conversations
 static NSMutableDictionary<NSString *, NSString *> *conversationsTagDict;
 static NSString *conversationsTagDictKey = @"com.jacobcxdev.iris.conversationsTagDict";
 static NSMutableArray<IrisConversationTag *> *tagsArray;
-static NSString *tagsArrayKey = @"com.jacobcxdev.iris.tagsArray";
 static NSMutableArray *pinnedConversationList;
 static NSString *pinnedConversationListKey = @"com.jacobcxdev.iris.pinnedConversationList";
 
@@ -73,7 +81,6 @@ static NSString *localUpdateNotificationName = @"com.jacobcxdev.iris.local.updat
 static NSString *localRequestNotificationName = @"com.jacobcxdev.iris.local.request";
 static NSString *iCloudPersistNotificationName = @"com.jacobcxdev.iris.iCloud.persist";
 static NSString *iCloudRestoreNotificationName = @"com.jacobcxdev.iris.iCloud.restore";
-static NSString *userDefaultsDidUpdateNotificationName = @"com.jacobcxdev.iris.userDefaults.didUpdate";
 
 static NSUserDefaults *userDefaults;
 static NSUbiquitousKeyValueStore *store;
@@ -94,17 +101,7 @@ static UIBarButtonItem *bbi;
 // Static Functions
 
 static void updateMenuButtons() {
-    NSMutableArray *buttonModels = [NSMutableArray new];
-    IrisFlagTagButtonModel *shownButtonModel = [[IrisFlagTagButtonModel alloc] initWithConversationFlag:Shown conversationTag:nil];
-    [buttonModels addObject:shownButtonModel];
-    IrisFlagTagButtonModel *hiddenButtonModel = [[IrisFlagTagButtonModel alloc] initWithConversationFlag:Hidden conversationTag:nil];
-    [buttonModels addObject:hiddenButtonModel];
-    for (IrisConversationTag *tag in tagsArray) {
-        IrisFlagTagButtonModel *buttonModel = [[IrisFlagTagButtonModel alloc] initWithConversationFlag:Tagged conversationTag:tag];
-        [buttonModels addObject:buttonModel];
-    }
-    IrisButtonModel *editButtonModel = [[IrisButtonModel alloc] initWithImage:[UIImage systemImageNamed:@"ellipsis.circle"] tintColour:[UIColor systemBlueColor] isHighlighted:false isSelected:false selectable:false badgeCount:0 badgeHidden:true alpha:1 tag:1 target:nil action:nil];
-    [buttonModels addObject:editButtonModel];
+    NSMutableArray *buttonModels = generateButtonModelsWithTags(tagsArray, true, true);
     for (IrisButtonModel *buttonModel in buttonModels) {
         buttonModel.target = ckclc;
         buttonModel.action = @selector(didTapMenuButton:);
@@ -131,7 +128,7 @@ static NSArray *defaultTagsArray() {
     ] mutableCopy];
 }
 
-static void persistDefaultsState(bool postiCloudNotification) {
+static void persistDefaultsState(bool postiCloudNotification, bool persistFlagTagData) {
     if (!userDefaults) return;
     [userDefaults setInteger:shownUnreadCount forKey:shownUnreadCountKey];
     [userDefaults setInteger:hiddenUnreadCount forKey:hiddenUnreadCountKey];
@@ -145,13 +142,16 @@ static void persistDefaultsState(bool postiCloudNotification) {
     }
     if (postiCloudNotification) {
         [notificationCentre postNotificationWithName:iCloudPersistNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
-    } else {
+    }
+    if (persistFlagTagData) {
         [userDefaults setObject:@(currentFlag) forKey:currentFlagKey];
         NSError *error = nil;
         NSData *currentTagData = [NSKeyedArchiver archivedDataWithRootObject:currentTag requiringSecureCoding:true error:&error];
         if (!error) {
             [userDefaults setObject:currentTagData forKey:currentTagKey];
         }
+        [userDefaults setObject:@(defaultFlag) forKey:defaultFlagKey];
+        [userDefaults setObject:defaultTagUUID forKey:defaultTagUUIDKey];
     }
 }
 
@@ -167,11 +167,32 @@ static void persistiCloudState() {
     }
 }
 
-static void updateTagsArray(NSMutableArray<IrisConversationTag *> *tags, bool shouldSwitchToShownFlag, bool shouldUpdateMenuButtons, bool shouldPersistDefaultsState) {
+static IrisConversationTag *defaultTag() {
+    NSUInteger idx = [tagsArray indexOfObjectPassingTest:^BOOL(IrisConversationTag *obj, NSUInteger idx, BOOL *stop) {
+        return [obj.uuid.UUIDString isEqualToString:defaultTagUUID];
+    }];
+    return idx != NSNotFound ? tagsArray[idx] : nil;
+}
+
+static void updateTagsArray(NSMutableArray<IrisConversationTag *> *tags, bool shouldReloadTableView, bool shouldUpdateMenuButtons, bool shouldPersistDefaultsState) {
     tagsArray = tags;
-    [ckclc _switchFlag:shouldSwitchToShownFlag ? Shown : currentFlag tag:shouldSwitchToShownFlag ? nil : currentTag];
+    if (defaultTagUUID && !defaultTag()) {
+        defaultFlag = Shown;
+        defaultTagUUID = nil;
+        shouldPersistDefaultsState = true;
+    }
+    if (shouldReloadTableView) {
+        bool shouldSwitch = false;
+        if (currentFlag == Tagged) {
+            NSUInteger idx = [tagsArray indexOfObjectPassingTest:^BOOL(IrisConversationTag *obj, NSUInteger idx, BOOL *stop) {
+                return [obj.uuid.UUIDString isEqualToString:currentTag.uuid.UUIDString];
+            }];
+            shouldSwitch = currentTag && idx == NSNotFound;
+        }
+        [ckclc _switchFlag:shouldSwitch ? defaultFlag : currentFlag tag:shouldSwitch ? defaultTag() : currentTag];
+    }
     if (shouldPersistDefaultsState) {
-        persistDefaultsState(true);
+        persistDefaultsState(true, true);
     }
     if (shouldUpdateMenuButtons && menuButton) {
         updateMenuButtons();
@@ -180,20 +201,22 @@ static void updateTagsArray(NSMutableArray<IrisConversationTag *> *tags, bool sh
 
 static void restoreDefaultsState(bool shouldUpdateTagsArray, bool shouldUpdateMenuButtons) {
     if (!userDefaults) return;
-    NSUInteger _currentFlag = [[userDefaults objectForKey:currentFlagKey] unsignedIntegerValue];
-    currentFlag = shouldSecureHiddenList && _currentFlag == Hidden ? Shown : _currentFlag;
-    NSData *currentTagData = [userDefaults dataForKey:currentTagKey];
-    currentTag = [NSKeyedUnarchiver unarchivedObjectOfClasses:[NSSet setWithArray:@[[IrisConversationTag class], [NSUUID class], [NSString class], [UIColor class]]] fromData:currentTagData error:nil];
     shownUnreadCount = [userDefaults integerForKey:shownUnreadCountKey];
     hiddenUnreadCount = [userDefaults integerForKey:hiddenUnreadCountKey];
     conversationsFlagsDict = [[userDefaults dictionaryForKey:conversationsFlagsDictKey] mutableCopy] ?: [NSMutableDictionary new];
     conversationsTagDict = [[userDefaults dictionaryForKey:conversationsTagDictKey] mutableCopy] ?: [NSMutableDictionary new];
     pinnedConversationList = [[userDefaults arrayForKey:pinnedConversationListKey] mutableCopy] ?: [NSMutableArray new];
+    defaultFlag = [userDefaults objectForKey:defaultFlagKey] ? [[userDefaults objectForKey:defaultFlagKey] unsignedIntegerValue] : Shown;
+    defaultTagUUID = [userDefaults objectForKey:defaultTagUUIDKey];
     if (shouldUpdateTagsArray) {
         NSData *tagsArrayData = [userDefaults dataForKey:tagsArrayKey];
         NSMutableArray *_tagsArray = [NSKeyedUnarchiver unarchivedObjectOfClasses:[NSSet setWithArray:@[[NSMutableArray class], [IrisConversationTag class], [NSUUID class], [NSString class], [UIColor class]]] fromData:tagsArrayData error:nil];
         updateTagsArray(tagsArrayData && _tagsArray ? _tagsArray : [defaultTagsArray() mutableCopy], true, shouldUpdateMenuButtons, false);
     }
+    IrisConversationFlag _currentFlag = [userDefaults objectForKey:currentFlagKey] ? [[userDefaults objectForKey:currentFlagKey] unsignedIntegerValue] : defaultFlag;
+    currentFlag = shouldOpenWithDefaults || (shouldSecureHiddenList && _currentFlag == Hidden) ? defaultFlag : _currentFlag;
+    NSData *currentTagData = [userDefaults dataForKey:currentTagKey];
+    currentTag = shouldOpenWithDefaults ? defaultTag() : [NSKeyedUnarchiver unarchivedObjectOfClasses:[NSSet setWithArray:@[[IrisConversationTag class], [NSUUID class], [NSString class], [UIColor class]]] fromData:currentTagData error:nil];
 }
 
 static void restoreiCloudState(bool shouldUpdateTagsArray, bool shouldUpdateMenuButtons) {
@@ -212,9 +235,9 @@ static void restoreiCloudState(bool shouldUpdateTagsArray, bool shouldUpdateMenu
 static void updateBadgeCount() {
     if (!menuButton) return;
     if (!shouldHideButtonBadge) {
-        [menuButton setBadgeCount:currentFlag == Shown ? hiddenUnreadCount : currentFlag == Tagged && currentTag ? shownUnreadCount + hiddenUnreadCount - currentTag.unreadCount : shownUnreadCount animated:true];
+        [menuButton setBadgeCount:currentFlag == Shown ? hiddenUnreadCount : currentFlag == Unread ? shouldSecureHiddenList ? shownUnreadCount : shownUnreadCount + hiddenUnreadCount : currentFlag == Tagged && currentTag ? shownUnreadCount + hiddenUnreadCount - currentTag.unreadCount : shownUnreadCount animated:true];
     }
-    [menuButton updateButtonBadgesWithShownUnreadCount:shownUnreadCount hiddenUnreadCount:hiddenUnreadCount animated:true];
+    [menuButton updateButtonBadgesWithShownUnreadCount:shownUnreadCount hiddenUnreadCount:hiddenUnreadCount shouldSecureHiddenList:shouldSecureHiddenList animated:true];
 }
 
 static void updateConversationsFlagsDict(NSString *key, bool condition, IrisConversationFlag flag) {
@@ -230,7 +253,6 @@ static void updateConversationsFlagsDict(NSString *key, bool condition, IrisConv
 
 static NSMutableArray *filterConversations(NSArray *conversations, IrisConversationFlag currentFlag, IrisConversationTag *currentTag, bool shouldFilterPinnedConversations, bool updateUnreadCount) {
     NSMutableArray *filteredConversations = [NSMutableArray new];
-    NSMutableArray *pendingFilteredConversations = [NSMutableArray new];
     if (updateUnreadCount) {
         shownUnreadCount = 0;
         hiddenUnreadCount = 0;
@@ -241,16 +263,21 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     for (CKConversation *conversation in conversations) {
         bool allowed = false;
         bool hidden = conversation.shouldHide;
-        bool hiddenForTag = shouldSecureHiddenList && hidden;
-        bool muted = conversation.muted;
+        bool shouldSecure = shouldSecureHiddenList && hidden;
+        bool muted = !shouldShowMutedUnreadCountInBadges && conversation.muted;
         switch (currentFlag) {
         case Hidden:
             if (hidden) {
                 allowed = true;
             }
             break;
+        case Unread:
+            if (conversation.hasUnreadMessages && !shouldSecure) {
+                allowed = true;
+            }
+            break;
         case Tagged:
-            if ([conversation tagMatchesTag:currentTag] && !hiddenForTag) {
+            if ([conversation tagMatchesTag:currentTag] && !shouldSecure) {
                 allowed = true;
             }
             break;
@@ -261,11 +288,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
             break;
         }
         if (allowed) {
-            if (shouldFilterPinnedConversations && conversation.pinned) {
-                [filteredConversations addObject:conversation];
-            } else {
-                [pendingFilteredConversations addObject:conversation];
-            }
+            [filteredConversations addObject:conversation];
         }
         if (updateUnreadCount) {
             if (hidden && !muted) {
@@ -273,15 +296,11 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
             } else if (!muted) {
                 shownUnreadCount += conversation.unreadCount;
             }
-            if (!muted && !hiddenForTag && conversation.tag) {
+            if (!muted && !shouldSecure && conversation.tag) {
                 conversation.tag.unreadCount += conversation.unreadCount;
             }
         }
     }
-    [filteredConversations sortUsingComparator:^NSComparisonResult(CKConversation* a, CKConversation* b) {
-        return [[a pinnedIndex] compare:[b pinnedIndex]];
-    }];
-    [filteredConversations addObjectsFromArray:pendingFilteredConversations];
     if (updateUnreadCount) {
         updateBadgeCount();
         [notificationCentre postNotificationUsingPostHandlerWithName:localUpdateNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
@@ -347,6 +366,15 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
 + (BOOL)pinnedConversationsEnabled {
     return true;
 }
+- (NSInteger)compareBySequenceNumberAndDateDescending:(CKConversation *)conversation {
+    if (self.pinned && conversation.pinned) {
+        return [[self  pinnedIndex] compare:[conversation pinnedIndex]];
+    }
+    if (self.pinned ^ conversation.pinned) {
+        return self.pinned ? NSOrderedAscending : NSOrderedDescending;
+    }
+    return %orig;
+}
 - (BOOL)isPinned {
     return [pinnedConversationList containsObject:[self uniqueIdentifier]];
 }
@@ -356,7 +384,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     } else {
         [pinnedConversationList removeObject:[self uniqueIdentifier]];
     }
-    persistDefaultsState(true);
+    persistDefaultsState(true, false);
     return %orig;
 }
 %new
@@ -373,12 +401,12 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
 }
 - (void)setMutedUntilDate:(NSDate *)date {
     updateConversationsFlagsDict([self uniqueIdentifier], true, Muted);
-    persistDefaultsState(true);
+    persistDefaultsState(true, false);
     return %orig;
 }
 - (void)unmute {
     updateConversationsFlagsDict([self uniqueIdentifier], false, Muted);
-    persistDefaultsState(true);
+    persistDefaultsState(true, false);
     return %orig;
 }
 %new
@@ -391,7 +419,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     if (self.hidden == shown) {
         self.hidden = !shown;
     }
-    persistDefaultsState(true);
+    persistDefaultsState(true, false);
 }
 %new
 - (BOOL)isHidden {
@@ -403,7 +431,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     if (self.shown == hidden) {
         self.shown = !hidden;
     }
-    persistDefaultsState(true);
+    persistDefaultsState(true, false);
 }
 %new
 - (BOOL)shouldHide {
@@ -419,11 +447,11 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     if (!tagged) {
         [conversationsTagDict removeObjectForKey:[self uniqueIdentifier]];
     }
-    persistDefaultsState(true);
+    persistDefaultsState(true, false);
 }
 %new
 - (BOOL)tagMatchesTag:(IrisConversationTag *)tag {
-    return self.tagged && self.tag && tag && [self.tag.uuid isEqual:tag.uuid];
+    return (self.tagged && self.tag && tag && [self.tag.uuid isEqual:tag.uuid]) || (!self.tagged && !tag);
 }
 %new
 - (IrisConversationTag *)tag {
@@ -445,23 +473,34 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     if (tag) {
         conversationsTagDict[[self uniqueIdentifier]] = tag.uuid.UUIDString;
     }
-    persistDefaultsState(true);
+    persistDefaultsState(true, false);
 }
 %end
 
 %hook CKConversationList
+%property (nonatomic, retain) NSMutableArray *filteredConversations;
+%property (nonatomic) bool updating;
+- (void)_setConversations:(NSArray *)conversations forFilterMode:(NSUInteger)filterMode {
+    return conversations ? %orig(filterConversations(conversations, currentFlag, currentTag, true, false), filterMode) : %orig;
+}
 - (NSMutableArray *)conversations {
-    return filterConversations(%orig, currentFlag, currentTag, true, true);
+    return self.updating ? [self conversationsForFlag:currentFlag tag:currentTag updateUnreadCount:true] : self.filteredConversations ?: %orig;
 }
 %new
-- (NSMutableArray *)conversationsForFlag:(IrisConversationFlag)flag tag:(IrisConversationTag *)tag {
-    return filterConversations((NSMutableArray *)[self valueForKey:@"_trackedConversations"], flag, tag, true, false);
+- (NSMutableArray *)conversationsForFlag:(IrisConversationFlag)flag tag:(IrisConversationTag *)tag updateUnreadCount:(BOOL)updateUnreadCount {
+    return filterConversations((NSMutableArray *)[self valueForKey:@"_trackedConversations"], flag, tag, true, updateUnreadCount);
 }
 %new
 - (NSMutableArray *)pinnedConversationsForFlag:(IrisConversationFlag)flag tag:(IrisConversationTag *)tag {
-    return [[[self conversationsForFlag:flag tag:tag] filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(CKConversation *evaluatedObject, NSDictionary<NSString *,id> *bindings) {
+    return [[[self conversationsForFlag:flag tag:tag updateUnreadCount:false] filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(CKConversation *evaluatedObject, NSDictionary<NSString *,id> *bindings) {
         return evaluatedObject.pinned;
     }]] mutableCopy];
+}
+- (void)updateConversationListsAndSortIfEnabled {
+    self.updating = true;
+    %orig;
+    self.filteredConversations = [self conversationsForFlag:currentFlag tag:currentTag updateUnreadCount:true];
+    self.updating = false;
 }
 %end
 
@@ -469,9 +508,6 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
 - (void)_chatUnreadCountDidChange:(NSNotification *)notification {
     [[self conversationList] conversations];
     return %orig;
-}
-- (NSArray *)activeConversations {
-    return [filterConversations(%orig, currentFlag, currentTag, true, false) copy];
 }
 - (void)viewDidLoad {
     ckclc = self;
@@ -491,6 +527,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     if (!shouldShowButton) {
         menuButton.alpha = 0;
         menuButton.hidden = true;
+        menuButton.enabled = false;
     }
     [container addSubview:menuButton];
     menuButton.translatesAutoresizingMaskIntoConstraints = false;
@@ -510,7 +547,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     if (!defaultNavigationBarTitle) {
         defaultNavigationBarTitle = self.navigationItem.title;
     }
-    self.navigationItem.title = currentTag && currentTag.name ? currentTag.name : defaultNavigationBarTitle;
+    self.navigationItem.title = currentFlag == Tagged ? currentTag.name ? currentTag.name : @"Untagged" : currentFlag == Unread ? @"Unread" : defaultNavigationBarTitle;
     return %orig;
 }
 - (NSMutableArray *)actionsForTranscriptPreviewController:(CKTranscriptPreviewController *)previewController {
@@ -607,7 +644,6 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
             }];
         } completion:nil];
     }
-
     return cell;
 }
 - (void)tableView:(UITableView *)tableView moveRowAtIndexPath:(NSIndexPath *)sourceIndexPath toIndexPath:(NSIndexPath *)destinationIndexPath {
@@ -639,6 +675,8 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
             conversation.hidden = true;
         }
         [self.tableView beginUpdates];
+        [self _updateConversationListsAndSortIfEnabled];
+        self.frozenConversations = [filterConversations(self.frozenConversations, currentFlag, currentTag, true, false) copy];
         [self.tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
         [self.tableView endUpdates];
         completionHandler(true);
@@ -664,17 +702,21 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
 %new
 - (void)motionEnded:(UIEventSubtype)motion withEvent:(UIEvent *)event {
     if (shouldToggleWhenShaken && motion == UIEventSubtypeMotionShake) {
-        [self switchFlag:currentFlag == Hidden ? Shown : Hidden tag:nil fromMenuButton:false];
+        [self switchFlag:currentFlag == Hidden ? defaultFlag : Hidden tag:currentFlag == Hidden ? defaultTag() : nil fromMenuButton:false];
     }
 }
 %new
 - (void)setButtonHidden:(bool)hidden {
     if (!menuButton || menuButton.hidden == hidden) return;
-    if (menuButton.hidden) menuButton.hidden = false;
+    if (menuButton.hidden) {
+        menuButton.hidden = false;
+        menuButton.enabled = true;
+    }
     [UIView animateWithDuration:0.25 animations:^{
         menuButton.alpha = hidden ? 0 : 1;
     } completion:^(BOOL finished) {
         menuButton.hidden = hidden;
+        menuButton.enabled = !hidden;
     }];
 }
 %new
@@ -700,6 +742,9 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
                     dispatch_async(dispatch_get_main_queue(), ^{
                         isAuthenticated = true;
                         [self _switchFlag:flag tag:tag];
+                        if (shouldShowButtonAfterAuthentication) {
+                            [self setButtonHidden:false];
+                        }
                     });
                 } else if (fromMenuButton) {
                     dispatch_async(dispatch_get_main_queue(), ^{
@@ -719,15 +764,11 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
 
     if ([[menuButton.buttonModels firstObject] isKindOfClass:[IrisFlagTagButtonModel class]] && (((IrisFlagTagButtonModel *)[menuButton.buttonModels firstObject]).conversationFlag != flag || ![((IrisFlagTagButtonModel *)[menuButton.buttonModels firstObject]).conversationTag.uuid isEqual:tag.uuid])) {
         NSUInteger idx = [((NSArray<IrisFlagTagButtonModel *> *)menuButton.buttonModels) indexOfObjectPassingTest:^BOOL(IrisFlagTagButtonModel *obj, NSUInteger idx, BOOL *stop) {
-            return obj.conversationFlag == flag && ((obj.conversationTag && tag && [obj.conversationTag.uuid isEqual:tag.uuid]) || (!obj.conversationTag && !tag));
+            return [obj isKindOfClass:[IrisFlagTagButtonModel class]] && obj.conversationFlag == flag && ((!obj.conversationTag && !tag) || (obj.conversationTag && tag && [obj.conversationTag.uuid isEqual:tag.uuid]));
         }];
         if (idx != NSNotFound) {
             [menuButton reloadCollectionViewWithTopButtonModel:menuButton.buttonModels[idx] animated:true];
         }
-    }
-
-    if (shouldShowButtonAfterAuthentication) {
-        [self setButtonHidden:false];
     }
 
     if (!defaultNavigationBarTitle) {
@@ -750,7 +791,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     [self.tableView reloadSections:indexSet withRowAnimation:UITableViewRowAnimationAutomatic];
     [self.tableView endUpdates];
 
-    persistDefaultsState(false);
+    persistDefaultsState(false, true);
 }
 %end
 
@@ -791,6 +832,15 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
 }
 %end
 
+%hook SMSApplication
+- (void)applicationWillTerminate {
+    persistDefaultsState(true, true);
+    return %orig;
+}
+%end
+%end
+
+%group Messages_QuickSwitch
 %hook CKBrowserSwitcherFooterView
 - (instancetype)initWithFrame:(CGRect)frame toggleBordersOnInterfaceStyle:(BOOL)toggleBordersOnInterfaceStyle {
     id orig = %orig;
@@ -840,10 +890,6 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
 %hook CKBrowserSwitcherFooterViewDataSource
 - (id)switcherView:(CKBrowserSwitcherFooterView *)switcherView modelAtIndexPath:(NSIndexPath *)indexPath type:(NSInteger *)type {
     return indexPath.section == 0 ? nil : %orig;
-}
-- (NSIndexPath *)switcherView:(CKBrowserSwitcherFooterView *)switcherView indexPathOfModelWithIdentifier:(NSString *)identifier {
-    NSIndexPath *orig = %orig;
-    return [NSIndexPath indexPathForItem:orig.item inSection:orig.section + 1];
 }
 %end
 
@@ -981,13 +1027,6 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     return migratedDictionary;
 }
 %end
-
-%hook SMSApplication
-- (void)applicationWillTerminate {
-    persistDefaultsState(true);
-    return %orig;
-}
-%end
 %end
 
 // IMAgent Hooks
@@ -999,7 +1038,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     imdbu = orig;
     return orig;
 }
-- (void)updateBadgeForUnreadCountChangeIfNeeded:(long long)count {
+- (void)updateBadgeForUnreadCountChangeIfNeeded:(NSInteger)count {
     return shouldHideHiddenUnreadCountFromSBBadge ? %orig(shownUnreadCount) : %orig;
 }
 %end
@@ -1060,19 +1099,22 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
 %ctor {
     NSDictionary *settings = [NSDictionary dictionaryWithContentsOfFile:@"/User/Library/Preferences/com.jacobcxdev.iris.plist"];
     if (settings) {
-        bool enabled = [settings objectForKey:@"enabled"] ? [[settings objectForKey:@"enabled"] boolValue] : true;
+        bool enabled = ![settings objectForKey:@"enabled"] || [[settings objectForKey:@"enabled"] boolValue];
         if (!enabled) return;
-        shouldShowButton = [settings objectForKey:shouldShowButtonKey] ? [[settings objectForKey:shouldShowButtonKey] boolValue] : true;
+        shouldOpenWithDefaults = [settings objectForKey:shouldOpenWithDefaultsKey] && [[settings objectForKey:shouldOpenWithDefaultsKey] boolValue];
+        shouldShowButton = ![settings objectForKey:shouldShowButtonKey] || [[settings objectForKey:shouldShowButtonKey] boolValue];
         shouldToggleWhenShaken = [settings objectForKey:shouldToggleWhenShakenKey] && [[settings objectForKey:shouldToggleWhenShakenKey] boolValue];
         shouldToggleWhenVolumePressedSimultaneously = [settings objectForKey:shouldToggleWhenVolumePressedSimultaneouslyKey] && [[settings objectForKey:shouldToggleWhenVolumePressedSimultaneouslyKey] boolValue];
         shouldToggleWhenRingerSwitched = [settings objectForKey:shouldToggleWhenRingerSwitchedKey] && [[settings objectForKey:shouldToggleWhenRingerSwitchedKey] boolValue];
         shouldHideUnknownSenders = [settings objectForKey:shouldHideUnknownSendersKey] && [[settings objectForKey:shouldHideUnknownSendersKey] boolValue];
         shouldHideHiddenUnreadCountFromSBBadge = [settings objectForKey:shouldHideHiddenUnreadCountFromSBBadgeKey] && [[settings objectForKey:shouldHideHiddenUnreadCountFromSBBadgeKey] boolValue];
         shouldHideButtonBadge = [settings objectForKey:shouldHideButtonBadgeKey] && [[settings objectForKey:shouldHideButtonBadgeKey] boolValue];
+        shouldShowMutedUnreadCountInBadges = [settings objectForKey:shouldShowMutedUnreadCountInBadgesKey] && [[settings objectForKey:shouldShowMutedUnreadCountInBadgesKey] boolValue];
         shouldSecureHiddenList = [settings objectForKey:shouldSecureHiddenListKey] && [[settings objectForKey:shouldSecureHiddenListKey] boolValue];
         shouldShowButtonAfterAuthentication = [settings objectForKey:shouldShowButtonAfterAuthenticationKey] && [[settings objectForKey:shouldShowButtonAfterAuthenticationKey] boolValue];
         shouldAutoHideHiddenList = [settings objectForKey:shouldAutoHideHiddenListKey] && [[settings objectForKey:shouldAutoHideHiddenListKey] boolValue];
         shouldHideSwipeActions = [settings objectForKey:shouldHideSwipeActionsKey] && [[settings objectForKey:shouldHideSwipeActionsKey] boolValue];
+        isQuickSwitchEnabled = ![settings objectForKey:isQuickSwitchEnabledKey] || [[settings objectForKey:isQuickSwitchEnabledKey] boolValue];
     }
 
     if ([[NSBundle mainBundle].bundleIdentifier isEqualToString:@"com.apple.tccd"]) {
@@ -1081,17 +1123,6 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
         notificationCentre = [JCXNotificationCentre centre];
         NSString *mainBundleID = [NSBundle mainBundle].bundleIdentifier;
         if ([mainBundleID isEqualToString:@"com.apple.MobileSMS"]) {
-            void *handle = dlopen("/Library/Frameworks/CydiaSubstrate.framework/CydiaSubstrate", RTLD_NOW);
-            if (handle) {
-                MSHookMemory = (MSHookMemory_t)(dlsym(handle, "MSHookMemory"));
-                favouritesSectionSym = MSFindSymbol(MSGetImageByName("/System/Library/PrivateFrameworks/ChatKit.framework/ChatKit"), "_CKAppStripFavoritesSection");
-                recentsSectionSym = MSFindSymbol(MSGetImageByName("/System/Library/PrivateFrameworks/ChatKit.framework/ChatKit"), "_CKAppStripRecentsSection");
-                const NSInteger favouritesSection = 1;
-                const NSInteger recentsSection = 2;
-                MSHookMemory(favouritesSectionSym, &favouritesSection, sizeof(NSInteger));
-                MSHookMemory(recentsSectionSym, &recentsSection, sizeof(NSInteger));
-                dlclose(handle);
-            }
             userDefaults = [NSUserDefaults standardUserDefaults];
             actionManager = [%c(CKSpringBoardActionManager) new];
             notificationCentre.postHandler = ^NSDictionary *(NSString *name) {
@@ -1146,14 +1177,14 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
                     isAuthenticated = false;
                     if (shouldAutoHideHiddenList && currentFlag == Hidden) {
                         shouldHideCurrentConversation = true;
-                        [ckclc _switchFlag:Shown tag:nil];
+                        [ckclc _switchFlag:defaultFlag tag:defaultTag()];
                     }
                     if (currentFlag != Hidden) {
                         [actionManager updateShortcutItems];
                     }
                 } else if ([notification.name isEqualToString:toggleHiddenListNotificationName]) {
                     if (ckclc && [UIApplication sharedApplication].applicationState == UIApplicationStateActive) {
-                        [ckclc switchFlag:currentFlag == Hidden ? Shown : Hidden tag:nil fromMenuButton:false];
+                        [ckclc switchFlag:currentFlag == Hidden ? defaultFlag : Hidden tag:currentFlag == Hidden ? defaultTag() : nil fromMenuButton:false];
                     }
                 } else if ([notification.name isEqualToString:localRequestNotificationName]) {
                     [notificationCentre postNotificationUsingPostHandlerWithName:localUpdateNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
@@ -1171,6 +1202,20 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
             [notificationCentre observeNotificationsWithName:userDefaultsDidUpdateNotificationName from:[NSDistributedNotificationCenter defaultCenter]];
             [notificationCentre postNotificationWithName:iCloudRestoreNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
             %init(Messages);
+            if (isQuickSwitchEnabled) {
+                void *handle = dlopen("/Library/Frameworks/CydiaSubstrate.framework/CydiaSubstrate", RTLD_NOW);
+                if (handle) {
+                    MSHookMemory = (MSHookMemory_t)(dlsym(handle, "MSHookMemory"));
+                    favouritesSectionSym = MSFindSymbol(MSGetImageByName("/System/Library/PrivateFrameworks/ChatKit.framework/ChatKit"), "_CKAppStripFavoritesSection");
+                    recentsSectionSym = MSFindSymbol(MSGetImageByName("/System/Library/PrivateFrameworks/ChatKit.framework/ChatKit"), "_CKAppStripRecentsSection");
+                    const NSInteger favouritesSection = 1;
+                    const NSInteger recentsSection = 2;
+                    MSHookMemory(favouritesSectionSym, &favouritesSection, sizeof(NSInteger));
+                    MSHookMemory(recentsSectionSym, &recentsSection, sizeof(NSInteger));
+                    dlclose(handle);
+                }
+                %init(Messages_QuickSwitch);
+            }
 #ifdef MOCKUP
             %init(Mockup);
 #endif
@@ -1196,7 +1241,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
                     persistiCloudState();
                 } else if ([notification.name isEqualToString:iCloudRestoreNotificationName] || [notification.name isEqualToString:NSUbiquitousKeyValueStoreDidChangeExternallyNotification]) {
                     restoreiCloudState(true, false);
-                    persistDefaultsState(false);
+                    persistDefaultsState(false, false);
                     [notificationCentre postNotificationWithName:userDefaultsDidUpdateNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
                 }
             };

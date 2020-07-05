@@ -15,8 +15,15 @@ import UIKit
     static let shownTintColour: UIColor = .systemBlue
     static let hiddenImage = UIImage(systemName: "questionmark.circle")
     static let hiddenTintColour: UIColor = .systemBlue
+    static let unreadImage = UIImage(systemName: "message.circle")
+    static let unreadTintColour: UIColor = .systemBlue
+    static let untaggedImage = UIImage(systemName: "minus.circle")
+    static let untaggedTintColour: UIColor = .systemBlue
     static let defaultImage = UIImage(systemName: "circle.fill")
     static let defaultTintColour: UIColor = .systemBlue
+
+    // MARK: - Properties
+    @objc public var name = ""
 
     // MARK: - Observed Properties
     @objc public var conversationFlag: IrisConversationFlag {
@@ -39,10 +46,12 @@ import UIKit
     }
 
     // MARK: - Funcs
-    @objc public func updateBadgeCount(shownUnreadCount: UInt, hiddenUnreadCount: UInt) {
+    @objc public func updateBadgeCount(shownUnreadCount: UInt, hiddenUnreadCount: UInt, shouldSecureHiddenList: Bool) {
         switch conversationFlag {
         case .Hidden:
             badgeCount = hiddenUnreadCount
+        case .Unread:
+            badgeCount = shouldSecureHiddenList ? shownUnreadCount : shownUnreadCount + hiddenUnreadCount
         case .Tagged:
             if let tag = conversationTag {
                 badgeCount = tag.unreadCount
@@ -55,12 +64,23 @@ import UIKit
     public func updateFlagTag() {
         switch conversationFlag {
         case .Shown:
+            name = "Shown"
             image = IrisFlagTagButtonModel.shownImage
             tintColour = conversationTag?.colour ?? IrisFlagTagButtonModel.shownTintColour
         case .Hidden:
+            name = "Hidden"
             image = IrisFlagTagButtonModel.hiddenImage
             tintColour = conversationTag?.colour ?? IrisFlagTagButtonModel.hiddenTintColour
+        case .Unread:
+            name = "Unread"
+            image = IrisFlagTagButtonModel.unreadImage
+            tintColour = conversationTag?.colour ?? IrisFlagTagButtonModel.unreadTintColour
+        case .Tagged:
+            name = conversationTag == nil ? "Untagged" : conversationTag?.name ?? ""
+            image = conversationTag == nil ? IrisFlagTagButtonModel.untaggedImage : IrisFlagTagButtonModel.defaultImage
+            tintColour = conversationTag?.colour ?? IrisFlagTagButtonModel.untaggedTintColour
         default:
+            name = ""
             image = IrisFlagTagButtonModel.defaultImage
             tintColour = conversationTag?.colour ?? IrisFlagTagButtonModel.defaultTintColour
         }

@@ -35,11 +35,11 @@ import UIKit
     // MARK: - Override Funcs
     public override func didMoveToWindow() {
         super.didMoveToWindow()
-        if let window = window {
-            topAnchor.constraint(equalTo: window.topAnchor).isActive = true
-            bottomAnchor.constraint(equalTo: window.bottomAnchor).isActive = true
-            leadingAnchor.constraint(equalTo: window.leadingAnchor).isActive = true
-            trailingAnchor.constraint(equalTo: window.trailingAnchor).isActive = true
+        if let view = window?.rootViewController?.view {
+            topAnchor.constraint(equalTo: view.topAnchor).isActive = true
+            bottomAnchor.constraint(equalTo: view.bottomAnchor).isActive = true
+            leadingAnchor.constraint(equalTo: view.leadingAnchor).isActive = true
+            trailingAnchor.constraint(equalTo: view.trailingAnchor).isActive = true
         }
     }
 

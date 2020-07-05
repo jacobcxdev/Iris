@@ -6,4 +6,10 @@ killall -9 imagent
 echo "Killing tccd"
 killall -9 tccd
 
+echo "Restarting imagent"
+launchctl start com.apple.imagent
+
+echo "Restarting tccd"
+launchctl start com.apple.tccd
+
 exit 0

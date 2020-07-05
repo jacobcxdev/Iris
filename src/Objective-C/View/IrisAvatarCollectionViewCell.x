@@ -61,10 +61,6 @@
     _avatarView.actionCategories = nil;
     _avatarView.style = 0;
 }
-- (void)layoutSubviews {
-    [super layoutSubviews];
-
-}
 - (void)didTapOnAvatarView:(id)sender {
     _tapHandler(_conversation);
 }
