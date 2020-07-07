@@ -505,6 +505,18 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
 %end
 
 %hook CKConversationListController
+- (void)_updateFilteredConversationLists {
+    [self conversationList].updating = true;
+    %orig;
+    [self conversationList].filteredConversations = [[self conversationList] conversationsForFlag:currentFlag tag:currentTag updateUnreadCount:true];
+    [self conversationList].updating = false;
+}
+- (void)_updateNonPlaceholderConverationLists {
+    [self conversationList].updating = true;
+    %orig;
+    [self conversationList].filteredConversations = [[self conversationList] conversationsForFlag:currentFlag tag:currentTag updateUnreadCount:true];
+    [self conversationList].updating = false;
+}
 - (void)_chatUnreadCountDidChange:(NSNotification *)notification {
     [[self conversationList] conversations];
     return %orig;
@@ -675,7 +687,16 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
             conversation.hidden = true;
         }
         [self.tableView beginUpdates];
-        [self _updateConversationListsAndSortIfEnabled];
+        if ([self respondsToSelector:@selector(_updateConversationListsAndSortIfEnabled)]) {
+            [self _updateConversationListsAndSortIfEnabled];
+        } else {
+            if ([self respondsToSelector:@selector(_updateNonPlaceholderConverationLists)]) {
+                [self _updateNonPlaceholderConverationLists];
+            }
+            if ([self respondsToSelector:@selector(_updateFilteredConversationLists)]) {
+                [self _updateFilteredConversationLists];
+            }
+        }
         self.frozenConversations = [filterConversations(self.frozenConversations, currentFlag, currentTag, true, false) copy];
         [self.tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
         [self.tableView endUpdates];
@@ -780,11 +801,11 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     if ([self respondsToSelector:@selector(_updateConversationListsAndSortIfEnabled)]) {
         [self _updateConversationListsAndSortIfEnabled];
     } else {
-        if ([self respondsToSelector:@selector(_updateFilteredConversationLists)]) {
-            [self _updateFilteredConversationLists];
-        }
         if ([self respondsToSelector:@selector(_updateNonPlaceholderConverationLists)]) {
             [self _updateNonPlaceholderConverationLists];
+        }
+        if ([self respondsToSelector:@selector(_updateFilteredConversationLists)]) {
+            [self _updateFilteredConversationLists];
         }
     }
     NSIndexSet *indexSet = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, self.tableView.numberOfSections)];
