@@ -4,7 +4,7 @@
 - (void)initPostDequeueWithConversation:(CKConversation * _Nullable)conversation tapHandler:(void (^ _Nullable)(CKConversation * _Nullable))tapHandler {
     _conversation = conversation;
     _tapHandler = tapHandler;
-    if (conversation && [[%c(CKUIBehavior) sharedBehaviors] contactPhotosEnabled]) {
+    if (conversation) {
         if (!_stackView) {
             [self setupStackView];
         }

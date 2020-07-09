@@ -318,8 +318,7 @@
             <key>label</key>
             <string>Quick Switch Preferences</string>
             <key>footerText</key>
-            <string>Enable quick switching between pinned conversations from the Messages plugin switcher.
-For Quick Switch to work, please navigate to Settings > Messages > Show Contact Photos, and ensure the toggle is enabled.</string>
+            <string>Enable quick switching between pinned conversations from the Messages plugin switcher.</string>
         </dict>
         <dict>
             <key>cell</key>

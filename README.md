@@ -72,4 +72,4 @@ If you would like to donate to me, please donate [via PayPal](https://paypal.me/
 ![7-Mockup](https://user-images.githubusercontent.com/27970288/83982016-ce15cb00-a91a-11ea-9762-d6f4e4ecb389.png)
 ![8-Mockup](https://user-images.githubusercontent.com/27970288/86540822-8d03dd00-beff-11ea-91ef-f490cd309dde.png)
 ![9-Mockup](https://user-images.githubusercontent.com/27970288/86540837-942aeb00-beff-11ea-882b-b34cc670b123.png)
-![10-Mockup](https://user-images.githubusercontent.com/27970288/86540842-98ef9f00-beff-11ea-9682-95f14cccf74b.png)
+![10-Mockup](https://user-images.githubusercontent.com/27970288/87050640-6e9b2b80-c1f6-11ea-801a-8649091b10a2.png)

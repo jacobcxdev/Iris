@@ -96,7 +96,6 @@
 @property (nonatomic, readonly) UIImage *readPinnedImage;
 @property (nonatomic, readonly) UIImage *unreadPinnedImage;
 + (instancetype)sharedBehaviors;
-- (BOOL)contactPhotosEnabled;
 @end
 
 @interface CKMessagesController : UIViewController
