@@ -59,7 +59,7 @@
 + (BOOL)pinnedConversationsEnabled;
 - (NSInteger)compareBySequenceNumberAndDateDescending:(CKConversation *)conversation;
 - (NSArray *)orderedContactsWithMaxCount:(NSUInteger)maxCount keysToFetch:(NSArray *)keysToFetch;
-- (NSNumber *)pinnedIndex;
+- (NSInteger)pinnedIndex;
 - (void)setMutedUntilDate:(NSDate *)date;
 - (BOOL)tagMatchesTag:(IrisConversationTag *)tag;
 - (NSString *)uniqueIdentifier;

@@ -1,5 +1,5 @@
 export ARCHS = arm64 arm64e
-export TARGET := iphone::latest:13.0
+export TARGET := iphone::13.0:13.0
 export ADDITIONAL_CFLAGS = -DTHEOS_LEAN_AND_MEAN # -DMOCKUP
 INSTALL_TARGET_PROCESSES = SpringBoard imagent tccd
 

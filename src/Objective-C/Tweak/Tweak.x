@@ -367,11 +367,15 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     return true;
 }
 - (NSInteger)compareBySequenceNumberAndDateDescending:(CKConversation *)conversation {
-    if (self.pinned && conversation.pinned) {
-        return [[self  pinnedIndex] compare:[conversation pinnedIndex]];
+    NSInteger pinnedIndex = [self pinnedIndex];
+    NSInteger conversationPinnedIndex = [conversation pinnedIndex];
+    bool pinned = pinnedIndex != NSNotFound;
+    bool conversationPinned = conversationPinnedIndex != NSNotFound;
+    if (pinned && conversationPinned) {
+        return [@(pinnedIndex) compare:@(conversationPinnedIndex)];
     }
-    if (self.pinned ^ conversation.pinned) {
-        return self.pinned ? NSOrderedAscending : NSOrderedDescending;
+    if (pinned ^ conversationPinned) {
+        return pinned ? NSOrderedAscending : NSOrderedDescending;
     }
     return %orig;
 }
@@ -388,8 +392,8 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     return %orig;
 }
 %new
-- (NSNumber *)pinnedIndex {
-    return @([pinnedConversationList indexOfObject:[self uniqueIdentifier]]);
+- (NSInteger)pinnedIndex {
+    return [pinnedConversationList indexOfObject:[self uniqueIdentifier]];
 }
 - (BOOL)isMuted {
     BOOL orig = %orig;
