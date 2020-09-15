@@ -1,6 +1,6 @@
 Package: com.jacobcxdev.iris
 Name: Iris
-Depends: mobilesubstrate, preferenceloader, firmware (>= 13.0), com.jacobcxdev.libjcx (>= 1.1.0), ws.hbang.alderis
+Depends: mobilesubstrate, preferenceloader, firmware (>= 13.0), com.jacobcxdev.libjcx (>= 1.1.0), ws.hbang.alderis (>= 1.0)
 Conflicts: com.jacobcxdev.idunnou, com.ryant453.groups, com.creaturecoding.covertck
 Architecture: iphoneos-arm
 Description: Put the sparkle back in 'i'Message!
