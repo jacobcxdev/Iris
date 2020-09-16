@@ -367,55 +367,59 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     return true;
 }
 - (NSInteger)compareBySequenceNumberAndDateDescending:(CKConversation *)conversation {
-    if (self.pinned && conversation.pinned) {
-        return [[self  pinnedIndex] compare:[conversation pinnedIndex]];
+    NSInteger pinnedIndex = [self pinnedIndex];
+    NSInteger conversationPinnedIndex = [conversation pinnedIndex];
+    bool pinned = pinnedIndex != NSNotFound;
+    bool conversationPinned = conversationPinnedIndex != NSNotFound;
+    if (pinned && conversationPinned) {
+        return [@(pinnedIndex) compare:@(conversationPinnedIndex)];
     }
-    if (self.pinned ^ conversation.pinned) {
-        return self.pinned ? NSOrderedAscending : NSOrderedDescending;
+    if (pinned ^ conversationPinned) {
+        return pinned ? NSOrderedAscending : NSOrderedDescending;
     }
     return %orig;
 }
 - (BOOL)isPinned {
-    return [pinnedConversationList containsObject:[self uniqueIdentifier]];
+    return [pinnedConversationList containsObject:self.groupID];
 }
 - (void)setPinned:(BOOL)pinned {
     if (pinned) {
-        [pinnedConversationList addObject:[self uniqueIdentifier]];
+        [pinnedConversationList addObject:self.groupID];
     } else {
-        [pinnedConversationList removeObject:[self uniqueIdentifier]];
+        [pinnedConversationList removeObject:self.groupID];
     }
     persistDefaultsState(true, false);
     return %orig;
 }
 %new
-- (NSNumber *)pinnedIndex {
-    return @([pinnedConversationList indexOfObject:[self uniqueIdentifier]]);
+- (NSInteger)pinnedIndex {
+    return [pinnedConversationList indexOfObject:self.groupID];
 }
 - (BOOL)isMuted {
     BOOL orig = %orig;
-    bool muted = (([conversationsFlagsDict[[self uniqueIdentifier]] unsignedIntegerValue] ?: 0) & Muted) != 0;
+    bool muted = (([conversationsFlagsDict[self.groupID] unsignedIntegerValue] ?: 0) & Muted) != 0;
     if (orig ^ muted) {
         [self setMutedUntilDate:[NSDate distantFuture]];
     }
     return muted;
 }
 - (void)setMutedUntilDate:(NSDate *)date {
-    updateConversationsFlagsDict([self uniqueIdentifier], true, Muted);
+    updateConversationsFlagsDict(self.groupID, true, Muted);
     persistDefaultsState(true, false);
     return %orig;
 }
 - (void)unmute {
-    updateConversationsFlagsDict([self uniqueIdentifier], false, Muted);
+    updateConversationsFlagsDict(self.groupID, false, Muted);
     persistDefaultsState(true, false);
     return %orig;
 }
 %new
 - (BOOL)isShown {
-    return (([conversationsFlagsDict[[self uniqueIdentifier]] unsignedIntegerValue] ?: 0) & Shown) != 0;
+    return (([conversationsFlagsDict[self.groupID] unsignedIntegerValue] ?: 0) & Shown) != 0;
 }
 %new
 - (void)setShown:(BOOL)shown {
-    updateConversationsFlagsDict([self uniqueIdentifier], shown, Shown);
+    updateConversationsFlagsDict(self.groupID, shown, Shown);
     if (self.hidden == shown) {
         self.hidden = !shown;
     }
@@ -423,11 +427,11 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
 }
 %new
 - (BOOL)isHidden {
-    return (([conversationsFlagsDict[[self uniqueIdentifier]] unsignedIntegerValue] ?: 0) & Hidden) != 0;
+    return (([conversationsFlagsDict[self.groupID] unsignedIntegerValue] ?: 0) & Hidden) != 0;
 }
 %new
 - (void)setHidden:(BOOL)hidden {
-    updateConversationsFlagsDict([self uniqueIdentifier], hidden, Hidden);
+    updateConversationsFlagsDict(self.groupID, hidden, Hidden);
     if (self.shown == hidden) {
         self.shown = !hidden;
     }
@@ -439,13 +443,13 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
 }
 %new
 - (BOOL)isTagged {
-    return (([conversationsFlagsDict[[self uniqueIdentifier]] unsignedIntegerValue] ?: 0) & Tagged) != 0;
+    return (([conversationsFlagsDict[self.groupID] unsignedIntegerValue] ?: 0) & Tagged) != 0;
 }
 %new
 - (void)setTagged:(BOOL)tagged {
-    updateConversationsFlagsDict([self uniqueIdentifier], tagged, Tagged);
+    updateConversationsFlagsDict(self.groupID, tagged, Tagged);
     if (!tagged) {
-        [conversationsTagDict removeObjectForKey:[self uniqueIdentifier]];
+        [conversationsTagDict removeObjectForKey:self.groupID];
     }
     persistDefaultsState(true, false);
 }
@@ -456,7 +460,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
 %new
 - (IrisConversationTag *)tag {
     if (!self.tagged) return nil;
-    NSString *uuid = conversationsTagDict[[self uniqueIdentifier]];
+    NSString *uuid = conversationsTagDict[self.groupID];
     if (!uuid) return nil;
     NSUInteger idx = [tagsArray indexOfObjectPassingTest:^BOOL(IrisConversationTag *obj, NSUInteger idx, BOOL *stop) {
         return [obj.uuid.UUIDString isEqualToString:uuid];
@@ -471,7 +475,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
 - (void)setTag:(IrisConversationTag *)tag {
     self.tagged = (BOOL)tag;
     if (tag) {
-        conversationsTagDict[[self uniqueIdentifier]] = tag.uuid.UUIDString;
+        conversationsTagDict[self.groupID] = tag.uuid.UUIDString;
     }
     persistDefaultsState(true, false);
 }
@@ -669,7 +673,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
     [pinnedConversations removeObject:mobileConversation];
     [pinnedConversations insertObject:mobileConversation atIndex:destinationIndexPath.row];
     for (CKConversation *conversation in pinnedConversations) {
-        [pinnedConversationList removeObject:[conversation uniqueIdentifier]];
+        [pinnedConversationList removeObject:conversation.groupID];
         [conversation setPinned:true];
     }
     return %orig;

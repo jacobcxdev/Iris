@@ -3,9 +3,9 @@
 // Conditional Imports
 
 #ifdef IS_PREFS
-#import <IrisPreferences-Swift.h>
+#import "IrisPreferences-Swift.h"
 #else
-#import <Iris-Swift.h>
+#import "Iris-Swift.h"
 #endif
 
 // Static Functions

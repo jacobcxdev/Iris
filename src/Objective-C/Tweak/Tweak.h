@@ -44,6 +44,7 @@
 @property (nonatomic, readwrite) NSString *displayName;
 @property (nonatomic, copy, readwrite) NSString *previewText;
 @property (nonatomic, strong, readwrite) NSNumber *businessConversation;
+@property (nonatomic, readonly) NSString *groupID;
 @property (nonatomic, readonly) BOOL hasDisplayName;
 @property (nonatomic, readonly) BOOL hasUnreadMessages;
 @property (nonatomic, readonly) NSUInteger unreadCount;
@@ -59,10 +60,9 @@
 + (BOOL)pinnedConversationsEnabled;
 - (NSInteger)compareBySequenceNumberAndDateDescending:(CKConversation *)conversation;
 - (NSArray *)orderedContactsWithMaxCount:(NSUInteger)maxCount keysToFetch:(NSArray *)keysToFetch;
-- (NSNumber *)pinnedIndex;
+- (NSInteger)pinnedIndex;
 - (void)setMutedUntilDate:(NSDate *)date;
 - (BOOL)tagMatchesTag:(IrisConversationTag *)tag;
-- (NSString *)uniqueIdentifier;
 - (void)unmute;
 @end
 
