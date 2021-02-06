@@ -7,17 +7,13 @@
 //
 
 #import "Tweak.h"
+#import <dlfcn.h>
 #import <LocalAuthentication/LocalAuthentication.h>
 #import <libJCX/Utilities.h>
 #import "../Globals.h"
 #import "../View/IrisAvatarCollectionViewCell.h"
 #import "../View/IrisRoundedBorderLayer.h"
 #import "../Controller/IrisTagListTableViewController.h"
-
-// MobileSubstrate
-
-typedef void (*MSHookMemory_t)(void *, const void *, size_t);
-static MSHookMemory_t MSHookMemory;
 
 // Static Variables
 
@@ -1230,7 +1226,6 @@ static NSMutableArray *filterConversations(NSArray *conversations, IrisConversat
             if (isQuickSwitchEnabled) {
                 void *handle = dlopen("/Library/Frameworks/CydiaSubstrate.framework/CydiaSubstrate", RTLD_NOW);
                 if (handle) {
-                    MSHookMemory = (MSHookMemory_t)(dlsym(handle, "MSHookMemory"));
                     favouritesSectionSym = MSFindSymbol(MSGetImageByName("/System/Library/PrivateFrameworks/ChatKit.framework/ChatKit"), "_CKAppStripFavoritesSection");
                     recentsSectionSym = MSFindSymbol(MSGetImageByName("/System/Library/PrivateFrameworks/ChatKit.framework/ChatKit"), "_CKAppStripRecentsSection");
                     const NSInteger favouritesSection = 1;
