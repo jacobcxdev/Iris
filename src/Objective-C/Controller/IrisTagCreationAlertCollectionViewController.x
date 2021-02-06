@@ -117,8 +117,9 @@
             self.colourPickerWindow.windowLevel = UIWindowLevelAlert + 1000;
             [self.colourPickerWindow makeKeyAndVisible];
 
+            HBColorPickerConfiguration *configuration = [[HBColorPickerConfiguration alloc] initWithColor:buttonModel.tintColour];
             HBColorPickerViewController *colourPicker = [HBColorPickerViewController new];
-            colourPicker.color = buttonModel.tintColour;
+            colourPicker.configuration = configuration;
             colourPicker.delegate = self;
             [viewController presentViewController:colourPicker animated:true completion:nil];
         }
